@@ -27,7 +27,7 @@ export function LoginScreen() {
     <Screen centered>
       <View style={styles.panel}>
         <View style={styles.header}>
-          <Text style={styles.kicker}>Expo Starter</Text>
+          <Text style={styles.kicker}>Hello Worrld! Expo Starter</Text>
           <Text style={styles.title}>Sign in</Text>
           <Text style={styles.description}>A feature-sliced React Native foundation.</Text>
         </View>
