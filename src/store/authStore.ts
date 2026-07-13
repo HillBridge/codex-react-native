@@ -26,11 +26,11 @@ export const useAuthStore = create<AuthState>()(
       clearSession: () => set({ isAuthenticated: false, session: null }),
       isAuthenticated: false,
       session: null,
-      setSession: (session) => set({ isAuthenticated: true, session }),
+      setSession: (session: AuthSession) => set({ isAuthenticated: true, session }),
     }),
     {
       name: 'auth-session',
       storage: createJSONStorage(() => AsyncStorage),
     },
-  ),
+  ) as any,
 );
