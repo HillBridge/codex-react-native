@@ -1,4 +1,5 @@
-export { apiClient, configureAccessTokenGetter, configureApiAuthHandlers } from './client';
+export { configureAccessTokenGetter, configureApiAuthHandlers } from './apiAuth';
+export { apiClient } from './client';
 export {
   API_CODE,
   getApiMessage,

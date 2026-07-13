@@ -1,85 +1,19 @@
 import axios, { AxiosHeaders } from 'axios';
-import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import type { AxiosError, AxiosResponse } from 'axios';
 
-import {
-  getApiMessage,
-  isAccessTokenExpired,
-  isApiEnvelope,
-  isRefreshTokenExpired,
-} from '@/shared/api/apiEnvelope';
+import { notifyUnauthorized } from '@/shared/api/apiAuth';
 import { apiLogger } from '@/shared/api/apiLogger';
-import { API_BASE_URL, API_CLIENT_ID, API_TIMEOUT_MS } from '@/shared/constants/env';
-import { getDeviceId } from '@/shared/device';
-
-type AccessTokenGetter = () => string | undefined;
-type AccessTokenRefreshHandler = () => Promise<string | undefined>;
-type UnauthorizedHandler = () => Promise<void> | void;
-
-type ApiAuthHandlerOptions = {
-  ignoredPaths?: readonly string[];
-  onUnauthorized?: UnauthorizedHandler;
-  refreshAccessToken?: AccessTokenRefreshHandler;
-};
-
-type RetryableRequestConfig = InternalAxiosRequestConfig & {
-  _authRetry?: boolean;
-};
-
-let getAccessToken: AccessTokenGetter = () => undefined;
-let ignoredAuthRefreshPaths: readonly string[] = [];
-let onUnauthorized: UnauthorizedHandler | undefined;
-let refreshAccessToken: AccessTokenRefreshHandler | undefined;
-let refreshPromise: Promise<string | undefined> | null = null;
-let unauthorizedPromise: Promise<void> | null = null;
-
-export function configureAccessTokenGetter(getter: AccessTokenGetter) {
-  getAccessToken = getter;
-}
-
-export function configureApiAuthHandlers(options: ApiAuthHandlerOptions) {
-  ignoredAuthRefreshPaths = options.ignoredPaths ?? ignoredAuthRefreshPaths;
-  onUnauthorized = options.onUnauthorized ?? onUnauthorized;
-  refreshAccessToken = options.refreshAccessToken ?? refreshAccessToken;
-}
+import {
+  handleApiAuthResponse,
+  type RetryableRequestConfig,
+} from '@/shared/api/authResponseHandler';
+import { applyApiRequestHeaders } from '@/shared/api/requestHeaders';
+import { API_BASE_URL, API_TIMEOUT_MS } from '@/shared/constants/env';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT_MS,
 });
-
-function isAuthRefreshIgnored(config: InternalAxiosRequestConfig) {
-  const requestUrl = config.url ?? '';
-
-  return ignoredAuthRefreshPaths.some((path) => requestUrl.includes(path));
-}
-
-async function getFreshAccessToken() {
-  if (!refreshAccessToken) {
-    return undefined;
-  }
-
-  refreshPromise ??= refreshAccessToken().finally(() => {
-    refreshPromise = null;
-  });
-
-  return refreshPromise;
-}
-
-async function notifyUnauthorized() {
-  if (!onUnauthorized) {
-    return;
-  }
-
-  unauthorizedPromise ??= Promise.resolve(onUnauthorized()).finally(() => {
-    unauthorizedPromise = null;
-  });
-
-  await unauthorizedPromise;
-}
-
-function rejectSessionExpired(message = 'Session expired. Please sign in again.') {
-  return Promise.reject(new Error(message));
-}
 
 async function retryRequestWithAccessToken(
   response: AxiosResponse,
@@ -95,16 +29,7 @@ async function retryRequestWithAccessToken(
 }
 
 apiClient.interceptors.request.use(async (config) => {
-  const accessToken = getAccessToken();
-
-  config.headers = AxiosHeaders.from(config.headers);
-  config.headers.set('xxx-client-id', API_CLIENT_ID);
-  config.headers.set('xxx-device-id', await getDeviceId());
-  config.headers.set('Accept-Language', 'en-US');
-
-  if (accessToken) {
-    config.headers.set('Authorization', `Bearer ${accessToken}`);
-  }
+  await applyApiRequestHeaders(config);
 
   apiLogger.request(config);
 
@@ -115,41 +40,7 @@ apiClient.interceptors.response.use(
   async (response) => {
     apiLogger.response(response);
 
-    if (!isApiEnvelope(response.data)) {
-      return response;
-    }
-
-    const originalConfig = response.config as RetryableRequestConfig;
-
-    if (isRefreshTokenExpired(response.data)) {
-      await notifyUnauthorized();
-
-      return rejectSessionExpired(getApiMessage(response.data));
-    }
-
-    if (
-      isAccessTokenExpired(response.data) &&
-      !originalConfig._authRetry &&
-      !isAuthRefreshIgnored(originalConfig)
-    ) {
-      try {
-        const nextAccessToken = await getFreshAccessToken();
-
-        if (!nextAccessToken) {
-          await notifyUnauthorized();
-
-          return rejectSessionExpired(getApiMessage(response.data));
-        }
-
-        return retryRequestWithAccessToken(response, nextAccessToken);
-      } catch (error) {
-        await notifyUnauthorized();
-
-        return Promise.reject(error);
-      }
-    }
-
-    return response;
+    return (await handleApiAuthResponse(response, retryRequestWithAccessToken)) ?? response;
   },
   async (error: AxiosError) => {
     apiLogger.error(error);
