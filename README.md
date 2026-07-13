@@ -8,6 +8,12 @@
 - pnpm >= 11
 - macOS 建议安装 Watchman，避免 Metro 出现 `EMFILE: too many open files, watch`
 
+建议使用 Node 20 LTS。Node 23 可能触发 Expo CLI 端口扫描异常：
+
+```text
+ERR_SOCKET_BAD_PORT
+```
+
 ## 常用命令
 
 ```bash
@@ -25,6 +31,15 @@ pnpm quality
 
 ```bash
 EXPO_PUBLIC_API_BASE_URL=https://ebanking-merchant-api-dev.transfersmile.com
+```
+
+Sandbox 环境配置在 `.env.sandbox`，启动命令：
+
+```bash
+pnpm start:sandbox
+pnpm ios:sandbox
+pnpm android:sandbox
+pnpm web:sandbox
 ```
 
 业务接口路径由各 feature 自己维护，例如登录接口在 `src/features/auth/constants/authEndpoints.ts`。

@@ -19,8 +19,8 @@ const initialForm: LoginForm = {
   areaCode: '55',
   googleCode: '',
   loginCode: '',
-  mobile: '',
-  password: '',
+  mobile: '(11) 91234-5678',
+  password: 'qCO*5Mmx0e',
 };
 
 type LoginPhase = 'credentials' | 'mfa';

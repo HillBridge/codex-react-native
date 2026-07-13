@@ -69,7 +69,7 @@ function normalizeHeaders(config: InternalAxiosRequestConfig) {
 function getRequestSummary(config: InternalAxiosRequestConfig) {
   return {
     baseURL: config.baseURL,
-    data: redactSensitiveData(config.data),
+    data: config.data || redactSensitiveData(config.data),
     headers: redactSensitiveData(normalizeHeaders(config)),
     method: config.method?.toUpperCase(),
     params: redactSensitiveData(config.params),
@@ -92,7 +92,7 @@ export const apiLogger = {
     }
 
     console.log('[API Response]', {
-      data: redactSensitiveData(response.data),
+      data: response.data,
       status: response.status,
       url: response.config.url,
     });
@@ -104,7 +104,7 @@ export const apiLogger = {
     }
 
     console.log('[API Error]', {
-      data: redactSensitiveData(error.response?.data),
+      data: error.response?.data,
       message: error.message,
       status: error.response?.status,
       url: error.config?.url,
