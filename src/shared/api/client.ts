@@ -1,5 +1,6 @@
 import axios, { AxiosHeaders } from 'axios';
 
+import { apiLogger } from '@/shared/api/apiLogger';
 import { API_BASE_URL } from '@/shared/constants/env';
 
 type AccessTokenGetter = () => string | undefined;
@@ -23,10 +24,18 @@ apiClient.interceptors.request.use((config) => {
     config.headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
+  apiLogger.request(config);
+
   return config;
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(error),
+  (response) => {
+    apiLogger.response(response);
+    return response;
+  },
+  (error) => {
+    apiLogger.error(error);
+    return Promise.reject(error);
+  },
 );
