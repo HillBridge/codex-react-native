@@ -19,6 +19,16 @@ pnpm web
 pnpm quality
 ```
 
+## 环境变量
+
+默认 dev 环境配置在 `.env.development`：
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=https://ebanking-merchant-api-dev.transfersmile.com
+```
+
+业务接口路径由各 feature 自己维护，例如登录接口在 `src/features/auth/api/authEndpoints.ts`。
+
 ## 目录约定
 
 ```text
