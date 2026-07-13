@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { login } from '@/features/auth/api/authApi';
+import { authTokenStorage } from '@/features/auth/model/authTokenStorage';
 import { useAuthStore } from '@/store';
 
 type LoginForm = {
@@ -51,6 +52,11 @@ export function useLoginForm() {
     setErrors((current) => ({ ...current, [name]: undefined, form: undefined }));
   }
 
+  async function signOut() {
+    await authTokenStorage.removeRefreshToken();
+    clearSession();
+  }
+
   async function submit() {
     const nextErrors = validateForm(form);
 
@@ -62,12 +68,13 @@ export function useLoginForm() {
     setIsSubmitting(true);
 
     try {
-      const nextSession = await login({
+      const credentials = await login({
         email: form.email.trim().toLowerCase(),
         password: form.password,
       });
 
-      setSession(nextSession);
+      await authTokenStorage.setRefreshToken(credentials.refreshToken);
+      setSession(credentials.session);
       setForm(initialForm);
     } catch (error) {
       setErrors({
@@ -80,11 +87,11 @@ export function useLoginForm() {
 
   return {
     canSubmit,
-    clearSession,
     errors,
     form,
     isSubmitting,
     session,
+    signOut,
     submit,
     updateField,
   };

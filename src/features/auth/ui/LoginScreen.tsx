@@ -3,10 +3,24 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLoginForm } from '@/features/auth/model/useLoginForm';
 import { colors, spacing } from '@/shared/constants/theme';
 import { AppButton, FormTextInput, Screen } from '@/shared/ui';
+import { useAuthStore } from '@/store';
 
 export function LoginScreen() {
-  const { canSubmit, clearSession, errors, form, isSubmitting, session, submit, updateField } =
+  const { canSubmit, errors, form, isSubmitting, session, signOut, submit, updateField } =
     useLoginForm();
+  const status = useAuthStore((state) => state.status);
+
+  if (status === 'restoring') {
+    return (
+      <Screen centered>
+        <View style={styles.panel}>
+          <Text style={styles.kicker}>Session</Text>
+          <Text style={styles.title}>Restoring</Text>
+          <Text style={styles.description}>Checking your saved session.</Text>
+        </View>
+      </Screen>
+    );
+  }
 
   if (session) {
     return (
@@ -15,7 +29,7 @@ export function LoginScreen() {
           <Text style={styles.kicker}>Signed in</Text>
           <Text style={styles.title}>Welcome, {session.user.name}</Text>
           <Text style={styles.description}>{session.user.email}</Text>
-          <AppButton variant="secondary" onPress={clearSession}>
+          <AppButton variant="secondary" onPress={signOut}>
             Sign out
           </AppButton>
         </View>

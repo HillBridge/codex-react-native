@@ -1,6 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type AuthUser = {
   email: string;
@@ -13,24 +11,23 @@ export type AuthSession = {
   user: AuthUser;
 };
 
+export type AuthStatus = 'restoring' | 'authenticated' | 'unauthenticated';
+
 type AuthState = {
   clearSession: () => void;
   isAuthenticated: boolean;
   session: AuthSession | null;
+  status: AuthStatus;
   setSession: (session: AuthSession) => void;
+  setStatus: (status: AuthStatus) => void;
 };
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      clearSession: () => set({ isAuthenticated: false, session: null }),
-      isAuthenticated: false,
-      session: null,
-      setSession: (session: AuthSession) => set({ isAuthenticated: true, session }),
-    }),
-    {
-      name: 'auth-session',
-      storage: createJSONStorage(() => AsyncStorage),
-    },
-  ) as any,
-);
+export const useAuthStore = create<AuthState>()((set) => ({
+  clearSession: () => set({ isAuthenticated: false, session: null, status: 'unauthenticated' }),
+  isAuthenticated: false,
+  session: null,
+  setSession: (session: AuthSession) =>
+    set({ isAuthenticated: true, session, status: 'authenticated' }),
+  setStatus: (status: AuthStatus) => set({ status }),
+  status: 'restoring',
+}));

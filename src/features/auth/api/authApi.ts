@@ -9,26 +9,33 @@ export type LoginPayload = {
   password: string;
 };
 
-type LoginApiUser = {
+type AuthApiUser = {
   email?: string;
   id?: string | number;
   name?: string;
 };
 
-type LoginApiData = {
+type AuthApiData = {
   accessToken?: string;
   access_token?: string;
+  refreshToken?: string;
+  refresh_token?: string;
   token?: string;
-  user?: LoginApiUser;
+  user?: AuthApiUser;
 };
 
-type LoginApiResponse = LoginApiData | { data?: LoginApiData };
+type AuthApiResponse = AuthApiData | { data?: AuthApiData };
 
-function hasNestedData(response: LoginApiResponse): response is { data?: LoginApiData } {
+export type AuthCredentials = {
+  refreshToken: string;
+  session: AuthSession;
+};
+
+function hasNestedData(response: AuthApiResponse): response is { data?: AuthApiData } {
   return Object.prototype.hasOwnProperty.call(response, 'data');
 }
 
-function getLoginData(response: LoginApiResponse): LoginApiData {
+function getAuthData(response: AuthApiResponse): AuthApiData {
   if (hasNestedData(response)) {
     return response.data ?? {};
   }
@@ -36,20 +43,34 @@ function getLoginData(response: LoginApiResponse): LoginApiData {
   return response;
 }
 
-function normalizeSession(response: LoginApiResponse, payload: LoginPayload): AuthSession {
-  const data = getLoginData(response);
+function normalizeCredentials(
+  response: AuthApiResponse,
+  options: {
+    fallbackEmail?: string;
+    fallbackRefreshToken?: string;
+  } = {},
+): AuthCredentials {
+  const data = getAuthData(response);
   const accessToken = data.accessToken ?? data.access_token ?? data.token;
+  const refreshToken = data.refreshToken ?? data.refresh_token ?? options.fallbackRefreshToken;
 
   if (!accessToken) {
     throw new Error('Login response is missing access token.');
   }
 
+  if (!refreshToken) {
+    throw new Error('Login response is missing refresh token.');
+  }
+
   return {
-    accessToken,
-    user: {
-      email: data.user?.email ?? payload.email,
-      id: String(data.user?.id ?? ''),
-      name: data.user?.name ?? payload.email.split('@')[0] ?? 'User',
+    refreshToken,
+    session: {
+      accessToken,
+      user: {
+        email: data.user?.email ?? options.fallbackEmail ?? '',
+        id: String(data.user?.id ?? ''),
+        name: data.user?.name ?? options.fallbackEmail?.split('@')[0] ?? 'User',
+      },
     },
   };
 }
@@ -63,10 +84,22 @@ function getLoginErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Unable to sign in.';
 }
 
-export async function login(payload: LoginPayload): Promise<AuthSession> {
+export async function login(payload: LoginPayload): Promise<AuthCredentials> {
   try {
-    const response = await apiClient.post<LoginApiResponse>(AUTH_ENDPOINTS.login, payload);
-    return normalizeSession(response.data, payload);
+    const response = await apiClient.post<AuthApiResponse>(AUTH_ENDPOINTS.login, payload);
+    return normalizeCredentials(response.data, { fallbackEmail: payload.email });
+  } catch (error) {
+    throw new Error(getLoginErrorMessage(error));
+  }
+}
+
+export async function refreshSession(refreshToken: string): Promise<AuthCredentials> {
+  try {
+    const response = await apiClient.post<AuthApiResponse>(AUTH_ENDPOINTS.refreshToken, {
+      refreshToken,
+    });
+
+    return normalizeCredentials(response.data, { fallbackRefreshToken: refreshToken });
   } catch (error) {
     throw new Error(getLoginErrorMessage(error));
   }
