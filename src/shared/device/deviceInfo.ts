@@ -5,6 +5,8 @@ import { secureStorage } from '@/shared/storage';
 
 const DEVICE_ID_KEY = 'device.id';
 
+let cachedDeviceId: string | null = null;
+
 export const DEVICE_TYPE = {
   android: 2,
   ios: 1,
@@ -33,14 +35,20 @@ function getDeviceType() {
 }
 
 export async function getDeviceId() {
+  if (cachedDeviceId) {
+    return cachedDeviceId;
+  }
+
   const savedDeviceId = await secureStorage.getString(DEVICE_ID_KEY);
 
   if (savedDeviceId) {
+    cachedDeviceId = savedDeviceId;
     return savedDeviceId;
   }
 
   const deviceId = createDeviceId();
   await secureStorage.setString(DEVICE_ID_KEY, deviceId);
+  cachedDeviceId = deviceId;
 
   return deviceId;
 }

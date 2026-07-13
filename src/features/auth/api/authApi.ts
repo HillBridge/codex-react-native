@@ -2,7 +2,8 @@ import { AxiosError } from 'axios';
 
 import { AUTH_ENDPOINTS } from '@/features/auth/constants/authEndpoints';
 import type { AuthSession } from '@/features/auth/store';
-import { apiClient } from '@/shared/api';
+import { apiClient, getApiMessage, isApiSuccess } from '@/shared/api';
+import type { ApiEnvelope } from '@/shared/api';
 import { base64Encode } from '@/shared/utils/base64';
 
 export type LoginPayload = {
@@ -37,12 +38,7 @@ type AuthApiData = {
   user?: AuthApiUser;
 };
 
-type AuthApiResponse = {
-  code?: number;
-  data?: AuthApiData;
-  error?: string;
-  message?: string;
-};
+type AuthApiResponse = ApiEnvelope<AuthApiData>;
 
 type PrincipalOption = {
   merchant_name?: string;
@@ -111,7 +107,7 @@ function getLoginErrorMessage(error: unknown) {
 }
 
 function getBusinessErrorMessage(response: AuthApiResponse) {
-  return response.message ?? response.error ?? 'Unable to sign in.';
+  return getApiMessage(response);
 }
 
 function hasPrincipalOptions(data: AuthApiData) {
@@ -198,7 +194,7 @@ export async function refreshSession(refreshToken: string): Promise<AuthCredenti
       refresh_token: refreshToken,
     });
 
-    if (response.data.code !== 200) {
+    if (!isApiSuccess(response.data)) {
       throw new Error(getBusinessErrorMessage(response.data));
     }
 
