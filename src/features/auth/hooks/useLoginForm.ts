@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 
 import { login } from '@/features/auth/api/authApi';
-import { authTokenStorage } from '@/features/auth/model/authTokenStorage';
-import { useAuthStore } from '@/store';
+import { useAuthStore } from '@/features/auth/store';
+import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
 
 type LoginForm = {
   email: string;

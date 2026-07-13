@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useLoginForm } from '@/features/auth/model/useLoginForm';
+import { useLoginForm } from '@/features/auth/hooks';
+import { useAuthStore } from '@/features/auth/store';
 import { colors, spacing } from '@/shared/constants/theme';
 import { AppButton, FormTextInput, Screen } from '@/shared/ui';
-import { useAuthStore } from '@/store';
 
 export function LoginScreen() {
   const { canSubmit, errors, form, isSubmitting, session, signOut, submit, updateField } =

@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
 import { refreshSession } from '@/features/auth/api/authApi';
-import { authTokenStorage } from '@/features/auth/model/authTokenStorage';
-import { useAuthStore } from '@/store';
+import { useAuthStore } from '@/features/auth/store';
+import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
 
 export function useAuthBootstrap() {
   const clearSession = useAuthStore((state) => state.clearSession);

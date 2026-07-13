@@ -17,9 +17,9 @@ type AuthState = {
   clearSession: () => void;
   isAuthenticated: boolean;
   session: AuthSession | null;
-  status: AuthStatus;
   setSession: (session: AuthSession) => void;
   setStatus: (status: AuthStatus) => void;
+  status: AuthStatus;
 };
 
 export const useAuthStore = create<AuthState>()((set) => ({

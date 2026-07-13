@@ -27,7 +27,7 @@ pnpm quality
 EXPO_PUBLIC_API_BASE_URL=https://ebanking-merchant-api-dev.transfersmile.com
 ```
 
-业务接口路径由各 feature 自己维护，例如登录接口在 `src/features/auth/api/authEndpoints.ts`。
+业务接口路径由各 feature 自己维护，例如登录接口在 `src/features/auth/constants/authEndpoints.ts`。
 
 ## 目录约定
 
@@ -45,19 +45,19 @@ src/api/
   请求实例、拦截器、通用接口等基础设施。
 
 src/store/
-  Zustand 全局状态。
+  仅放真正跨 feature 的全局状态。当前 auth 状态归属于 `src/features/auth/store`。
 ```
 
 ## 登录态设计
 
 当前 auth 模块采用移动端常见的 access token + refresh token 方案：
 
-- `accessToken`：只放在 Zustand 内存状态中，App 进程结束后会丢失。
+- `accessToken`：只放在 auth feature 的 Zustand 内存状态中，App 进程结束后会丢失。
 - `refreshToken`：通过 `expo-secure-store` 写入系统安全存储。
 - App 启动：读取 `refreshToken`，调用 `AUTH_ENDPOINTS.refreshToken` 换取新的 `accessToken`。
 - 登出：清理 Zustand 内存状态和 SecureStore 中的 `refreshToken`。
 
-共享安全存储封装在 `src/shared/storage`，auth 业务 token 存取封装在 `src/features/auth/model/authTokenStorage.ts`。业务接口路径由各 feature 自己维护，例如 auth 接口在 `src/features/auth/api/authEndpoints.ts`。
+共享安全存储封装在 `src/shared/storage`。auth feature 内部按职责拆分：接口在 `src/features/auth/api`，常量在 `src/features/auth/constants`，状态在 `src/features/auth/store`，hooks 在 `src/features/auth/hooks`，token 存取工具在 `src/features/auth/utils`。业务接口路径由各 feature 自己维护，例如 auth 接口在 `src/features/auth/constants/authEndpoints.ts`。
 
 ## 提交质量检查
 

@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from 'react';
 
-import { useAuthBootstrap } from '@/features/auth/model/useAuthBootstrap';
+import { useAuthBootstrap } from '@/features/auth/hooks';
 
 export function AuthBootstrapper({ children }: PropsWithChildren) {
   useAuthBootstrap();
