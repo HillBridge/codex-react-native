@@ -3,12 +3,11 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { useConfigureApiClient } from '@/api/useConfigureApiClient';
-import { AuthBootstrapper } from '@/features/auth';
+import { AuthBootstrapper, useConfigureAuthApiClient } from '@/features/auth';
 import { colors } from '@/shared/constants/theme';
 
 export default function RootLayout() {
-  useConfigureApiClient();
+  useConfigureAuthApiClient();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

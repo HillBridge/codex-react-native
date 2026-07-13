@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
-import { configureAccessTokenGetter } from '@/api/client';
-import { useAuthStore } from '@/features/auth';
+import { useAuthStore } from '@/features/auth/store';
+import { configureAccessTokenGetter } from '@/shared/api';
 
-export function useConfigureApiClient() {
+export function useConfigureAuthApiClient() {
   const accessToken = useAuthStore((state) => state.session?.accessToken);
 
   useEffect(() => {

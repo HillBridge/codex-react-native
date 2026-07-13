@@ -1,8 +1,8 @@
 import { AxiosError } from 'axios';
 
-import { apiClient } from '@/api';
 import { AUTH_ENDPOINTS } from '@/features/auth/constants/authEndpoints';
 import type { AuthSession } from '@/features/auth/store';
+import { apiClient } from '@/shared/api';
 
 export type LoginPayload = {
   email: string;
