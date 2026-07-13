@@ -1,41 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useLoginForm } from '@/features/auth/hooks';
-import { useAuthStore } from '@/features/auth/store';
 import { colors, spacing } from '@/shared/constants/theme';
 import { AppButton, FormTextInput, Screen } from '@/shared/package';
 
 export function LoginScreen() {
-  const { canSubmit, errors, form, isSubmitting, session, signOut, submit, updateField } =
-    useLoginForm();
-  const status = useAuthStore((state) => state.status);
-
-  if (status === 'restoring') {
-    return (
-      <Screen centered>
-        <View style={styles.panel}>
-          <Text style={styles.kicker}>Session</Text>
-          <Text style={styles.title}>Restoring</Text>
-          <Text style={styles.description}>Checking your saved session.</Text>
-        </View>
-      </Screen>
-    );
-  }
-
-  if (session) {
-    return (
-      <Screen centered>
-        <View style={styles.panel}>
-          <Text style={styles.kicker}>Signed in</Text>
-          <Text style={styles.title}>Welcome, {session.user.name}</Text>
-          <Text style={styles.description}>{session.user.email}</Text>
-          <AppButton variant="secondary" onPress={signOut}>
-            Sign out
-          </AppButton>
-        </View>
-      </Screen>
-    );
-  }
+  const { canSubmit, errors, form, isSubmitting, submit, updateField } = useLoginForm();
 
   return (
     <Screen centered>

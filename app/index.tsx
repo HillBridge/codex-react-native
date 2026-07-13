@@ -1,5 +1,9 @@
-import { LoginScreen } from '@/features/auth';
+import { GuestOnlyRoute, LoginScreen } from '@/features/auth';
 
 export default function IndexRoute() {
-  return <LoginScreen />;
+  return (
+    <GuestOnlyRoute>
+      <LoginScreen />
+    </GuestOnlyRoute>
+  );
 }

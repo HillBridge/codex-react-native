@@ -36,10 +36,10 @@ app/
   只放 Expo Router 页面和布局，页面负责组装，不写业务逻辑。
 
 src/features/
-  核心业务功能模块。当前包含 auth 登录模块。
+  核心业务功能模块。当前包含 auth、home 模块。
 
 src/shared/
-  跨功能共享的 package、hooks、utils、constants、storage。
+  跨功能共享的 package、hooks、utils、constants、routing、storage。
 
 src/api/
   请求实例、拦截器、通用接口等基础设施。
@@ -58,6 +58,13 @@ src/store/
 - 登出：清理 Zustand 内存状态和 SecureStore 中的 `refreshToken`。
 
 共享安全存储封装在 `src/shared/storage`。auth feature 内部按职责拆分：接口在 `src/features/auth/api`，常量在 `src/features/auth/constants`，状态在 `src/features/auth/store`，hooks 在 `src/features/auth/hooks`，组件在 `src/features/auth/components`，token 存取工具在 `src/features/auth/utils`。业务接口路径由各 feature 自己维护，例如 auth 接口在 `src/features/auth/constants/authEndpoints.ts`。
+
+## 路由设计
+
+- `app/` 只放 Expo Router 页面，页面只组合路由守卫和 feature screen。
+- 路由路径常量和导航封装在 `src/shared/routing`。
+- 登录页 `/` 使用 `GuestOnlyRoute`，已登录时自动跳转 `/home`。
+- 首页 `/home` 使用 `ProtectedRoute`，未登录时自动跳回 `/`。
 
 ## 提交质量检查
 

@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { login } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
+import { APP_ROUTES, useAppNavigation } from '@/shared/routing';
 
 type LoginForm = {
   email: string;
@@ -38,8 +39,7 @@ export function useLoginForm() {
   const [form, setForm] = useState<LoginForm>(initialForm);
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const clearSession = useAuthStore((state) => state.clearSession);
-  const session = useAuthStore((state) => state.session);
+  const navigation = useAppNavigation();
   const setSession = useAuthStore((state) => state.setSession);
 
   const canSubmit = useMemo(
@@ -50,11 +50,6 @@ export function useLoginForm() {
   function updateField(name: keyof LoginForm, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined, form: undefined }));
-  }
-
-  async function signOut() {
-    await authTokenStorage.removeRefreshToken();
-    clearSession();
   }
 
   async function submit() {
@@ -76,6 +71,7 @@ export function useLoginForm() {
       await authTokenStorage.setRefreshToken(credentials.refreshToken);
       setSession(credentials.session);
       setForm(initialForm);
+      navigation.replace(APP_ROUTES.home);
     } catch (error) {
       setErrors({
         form: error instanceof Error ? error.message : 'Unable to sign in.',
@@ -90,8 +86,6 @@ export function useLoginForm() {
     errors,
     form,
     isSubmitting,
-    session,
-    signOut,
     submit,
     updateField,
   };
