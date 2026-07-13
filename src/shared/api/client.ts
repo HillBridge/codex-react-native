@@ -1,7 +1,8 @@
 import axios, { AxiosHeaders } from 'axios';
 
 import { apiLogger } from '@/shared/api/apiLogger';
-import { API_BASE_URL } from '@/shared/constants/env';
+import { API_BASE_URL, API_CLIENT_ID } from '@/shared/constants/env';
+import { getDeviceId } from '@/shared/device';
 
 type AccessTokenGetter = () => string | undefined;
 
@@ -16,11 +17,15 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use(async (config) => {
   const accessToken = getAccessToken();
 
+  config.headers = AxiosHeaders.from(config.headers);
+  config.headers.set('xxx-client-id', API_CLIENT_ID);
+  config.headers.set('xxx-device-id', await getDeviceId());
+  config.headers.set('Accept-Language', 'en-US');
+
   if (accessToken) {
-    config.headers = AxiosHeaders.from(config.headers);
     config.headers.set('Authorization', `Bearer ${accessToken}`);
   }
 

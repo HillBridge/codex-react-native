@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 
 export type AuthUser = {
-  email: string;
+  email?: string;
   id: string;
   name: string;
+  phone?: string;
 };
 
 export type AuthSession = {
