@@ -7,10 +7,11 @@
 ```
 app/                          expo-router 路由入口
 src/
-  api/                        axios 实例 + token 注入（client.ts, useConfigureApiClient.ts）
-  store/                      zustand 全局状态（authStore.ts，persist 到 AsyncStorage）
-  features/<name>/            垂直切片：api/ model/ ui/
-  shared/                      跨 feature 复用（ui/ constants/）
+  shared/
+    api/                       axios 实例 + token 注入 + 日志（client.ts / apiAuth.ts / authResponseHandler.ts / requestHeaders.ts / apiLogger.ts / apiEnvelope.ts）
+    storage/                   安全存储封装（secureStorage.ts，基于 expo-secure-store）
+    constants/ device/ utils/  跨 feature 复用的常量、设备信息、工具函数
+  features/<name>/            垂直切片：api/ components/ constants/ guards/ hooks/ store/ utils/
 ```
 
 **技术栈**：Expo 54 + expo-router 6 + React Native 0.81 + React 19 + zustand 5 + axios，pnpm 管理。
@@ -21,9 +22,9 @@ src/
 
 > 各红线原因见 @docs/decisions/architecture.md
 
-- 禁止修改 `src/api/client.ts` 中的 token 注入逻辑（interceptor），除非用户明确要求改动鉴权方式
-- 禁止修改或输出 `.env.development`、`.env.example` 中的真实 API 地址内容；不要在对话中回显这些文件的完整内容
-- 禁止修改 `src/store/authStore.ts` 的持久化 key（`auth-session`）或存储介质（AsyncStorage），会导致老用户登录态丢失
+- 禁止修改 `src/shared/api/` 下 `client.ts`/`apiAuth.ts`/`authResponseHandler.ts`/`requestHeaders.ts` 中的 token 注入与刷新逻辑，除非用户明确要求改动鉴权方式
+- 禁止修改或输出 `.env.development`、`.env.example` 中的真实配置内容（API 地址、client id 等）；不要在对话中回显这些文件的完整内容
+- 禁止修改 `src/features/auth/utils/authTokenStorage.ts` 中 refresh token 的存储 key（`auth.refreshToken`）或存储介质（expo-secure-store），会导致老用户被强制登出
 - 禁止引入新第三方依赖，除非用户明确同意
 - 禁止修改 `.eslintrc.js`、`.prettierrc`、`tsconfig.json`、`babel.config.js`、`app.json` 等构建配置文件，除非用户明确要求
 
@@ -56,4 +57,4 @@ src/
 
 <!-- 格式：- <日期> <发生了什么> → <新增规则> -->
 
-- 2026-07-13 `src/store/authStore.ts` 中 `create<AuthState>()(persist(...))` 类型推断失败，最终用 `as any` 兜底解决 → 后续若升级 zustand 版本，优先检查该处类型是否可去除 `as any`
+（暂无）
