@@ -9,7 +9,6 @@ import { base64Encode } from '@/shared/utils/base64';
 export type LoginPayload = {
   areaCode: string;
   googleCode?: string;
-  loginCode?: string;
   mobile: string;
   password: string;
 };
@@ -175,8 +174,6 @@ export async function login(payload: LoginPayload): Promise<LoginResult> {
   try {
     const response = await apiClient.post<AuthApiResponse>(AUTH_ENDPOINTS.login, {
       area_code: payload.areaCode,
-      code: payload.googleCode,
-      login_code: payload.loginCode,
       mfa_code: payload.googleCode ?? '',
       phone: payload.mobile,
       pwd: base64Encode(payload.password),

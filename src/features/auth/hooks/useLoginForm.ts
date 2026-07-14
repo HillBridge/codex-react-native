@@ -8,7 +8,6 @@ import { APP_ROUTES, useAppNavigation } from '@/shared/routing';
 type LoginForm = {
   areaCode: string;
   googleCode: string;
-  loginCode: string;
   mobile: string;
   password: string;
 };
@@ -18,7 +17,6 @@ type LoginFormErrors = Partial<Record<keyof LoginForm | 'form', string>>;
 const initialForm: LoginForm = {
   areaCode: '55',
   googleCode: '',
-  loginCode: '',
   mobile: '(11) 91234-5678',
   password: 'qCO*5Mmx0e',
 };
@@ -30,15 +28,26 @@ type LoginNotice = {
   type: 'info' | 'warning';
 };
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, '');
+}
+
 function validateForm(form: LoginForm, phase: LoginPhase): LoginFormErrors {
   const errors: LoginFormErrors = {};
+  const areaCodeDigits = onlyDigits(form.areaCode);
+  const mobileDigits = onlyDigits(form.mobile);
+  const googleCodeDigits = onlyDigits(form.googleCode);
 
   if (!form.areaCode.trim()) {
     errors.areaCode = 'Area code is required.';
+  } else if (areaCodeDigits.length !== form.areaCode.trim().length) {
+    errors.areaCode = 'Area code must contain digits only.';
   }
 
   if (!form.mobile.trim()) {
     errors.mobile = 'Mobile number is required.';
+  } else if (mobileDigits.length < 8) {
+    errors.mobile = 'Enter a valid mobile number.';
   }
 
   if (!form.password) {
@@ -49,9 +58,19 @@ function validateForm(form: LoginForm, phase: LoginPhase): LoginFormErrors {
 
   if (phase === 'mfa' && !form.googleCode.trim()) {
     errors.googleCode = 'Google Auth code is required.';
+  } else if (phase === 'mfa' && googleCodeDigits.length !== 6) {
+    errors.googleCode = 'Google Auth code must be 6 digits.';
   }
 
   return errors;
+}
+
+function validateCredentialsStep(form: LoginForm) {
+  return validateForm(form, 'credentials');
+}
+
+function validateMfaStep(form: LoginForm) {
+  return validateForm(form, 'mfa');
 }
 
 export function useLoginForm() {
@@ -81,13 +100,26 @@ export function useLoginForm() {
 
   function resetMfa() {
     setPhase('credentials');
-    setForm((current) => ({ ...current, googleCode: '', loginCode: '' }));
+    setForm((current) => ({ ...current, googleCode: '' }));
     setNotice(null);
     setErrors({});
   }
 
-  async function submit() {
-    const nextErrors = validateForm(form, phase);
+  function submitCredentialsStep() {
+    const nextErrors = validateCredentialsStep(form);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setErrors({});
+    setNotice({ message: 'Enter your Google Auth code to continue.', type: 'info' });
+    setPhase('mfa');
+  }
+
+  async function submitMfaStep() {
+    const nextErrors = validateMfaStep(form);
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -98,10 +130,9 @@ export function useLoginForm() {
 
     try {
       const result = await login({
-        areaCode: form.areaCode.trim(),
-        googleCode: form.googleCode.trim(),
-        loginCode: form.loginCode,
-        mobile: form.mobile.trim(),
+        areaCode: onlyDigits(form.areaCode),
+        googleCode: onlyDigits(form.googleCode),
+        mobile: onlyDigits(form.mobile),
         password: form.password,
       });
 
@@ -119,7 +150,6 @@ export function useLoginForm() {
         setForm((current) => ({
           ...current,
           googleCode: '',
-          loginCode: result.challenge.code ?? current.loginCode,
         }));
         setNotice({ message: result.message, type: 'info' });
         return;
@@ -153,6 +183,15 @@ export function useLoginForm() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function submit() {
+    if (phase === 'credentials') {
+      submitCredentialsStep();
+      return;
+    }
+
+    void submitMfaStep();
   }
 
   return {

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, View } from 'react-native';
 
 import { useLoginForm } from '@/features/auth/hooks';
 import { colors, spacing } from '@/shared/constants/theme';
@@ -7,6 +7,14 @@ import { AppButton, FormTextInput, Screen } from '@/shared/package';
 export function LoginScreen() {
   const { canSubmit, errors, form, isSubmitting, notice, phase, resetMfa, submit, updateField } =
     useLoginForm();
+
+  function updateGoogleCode(value: string) {
+    updateField('googleCode', value);
+
+    if (value.replace(/\D/g, '').length >= 6) {
+      Keyboard.dismiss();
+    }
+  }
 
   return (
     <Screen centered>
@@ -20,54 +28,65 @@ export function LoginScreen() {
         </View>
 
         <View style={styles.form}>
-          <View style={styles.phoneRow}>
-            <FormTextInput
-              autoCapitalize="none"
-              error={errors.areaCode}
-              keyboardType="phone-pad"
-              label="Area Code"
-              onChangeText={(value) => updateField('areaCode', value)}
-              placeholder="55"
-              style={styles.areaCodeInput}
-              value={form.areaCode}
-            />
+          {phase === 'credentials' ? (
+            <>
+              <View style={styles.phoneRow}>
+                <FormTextInput
+                  autoCapitalize="none"
+                  error={errors.areaCode}
+                  keyboardType="phone-pad"
+                  label="Area Code"
+                  onChangeText={(value) => updateField('areaCode', value)}
+                  placeholder="55"
+                  style={styles.areaCodeInput}
+                  value={form.areaCode}
+                />
 
-            <View style={styles.mobileField}>
+                <View style={styles.mobileField}>
+                  <FormTextInput
+                    autoCapitalize="none"
+                    autoComplete="tel"
+                    error={errors.mobile}
+                    keyboardType="phone-pad"
+                    label="Mobile Number"
+                    onChangeText={(value) => updateField('mobile', value)}
+                    placeholder="Phone Number"
+                    textContentType="telephoneNumber"
+                    value={form.mobile}
+                  />
+                </View>
+              </View>
+
               <FormTextInput
                 autoCapitalize="none"
-                autoComplete="tel"
-                error={errors.mobile}
-                keyboardType="phone-pad"
-                label="Mobile Number"
-                onChangeText={(value) => updateField('mobile', value)}
-                placeholder="Phone Number"
-                textContentType="telephoneNumber"
-                value={form.mobile}
+                autoComplete="password"
+                error={errors.password}
+                label="Password"
+                onChangeText={(value) => updateField('password', value)}
+                placeholder="Password"
+                secureTextEntry
+                textContentType="password"
+                value={form.password}
               />
-            </View>
-          </View>
-
-          <FormTextInput
-            autoCapitalize="none"
-            autoComplete="password"
-            error={errors.password}
-            label="Password"
-            onChangeText={(value) => updateField('password', value)}
-            placeholder="Password"
-            secureTextEntry
-            textContentType="password"
-            value={form.password}
-          />
+            </>
+          ) : null}
 
           {phase === 'mfa' ? (
             <View style={styles.mfaBlock}>
+              <Text style={styles.stepDescription}>
+                Verifying +{form.areaCode} {form.mobile}
+              </Text>
+
               <FormTextInput
                 autoCapitalize="none"
                 error={errors.googleCode}
                 keyboardType="number-pad"
                 label="Google Auth Code"
-                onChangeText={(value) => updateField('googleCode', value)}
+                maxLength={6}
+                onChangeText={updateGoogleCode}
+                onSubmitEditing={submit}
                 placeholder="6-digit code"
+                returnKeyType="done"
                 value={form.googleCode}
               />
 
@@ -86,7 +105,7 @@ export function LoginScreen() {
           {errors.form ? <Text style={styles.formError}>{errors.form}</Text> : null}
 
           <AppButton disabled={!canSubmit} loading={isSubmitting} onPress={submit}>
-            {phase === 'mfa' ? 'Verify and sign in' : 'Login'}
+            {phase === 'mfa' ? 'Verify and sign in' : 'Continue'}
           </AppButton>
         </View>
       </View>
@@ -140,6 +159,11 @@ const styles = StyleSheet.create({
   },
   mfaBlock: {
     gap: spacing.md,
+  },
+  stepDescription: {
+    color: colors.mutedText,
+    fontSize: 14,
+    lineHeight: 20,
   },
   notice: {
     color: colors.primary,
