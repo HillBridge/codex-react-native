@@ -90,7 +90,7 @@ export function LoginScreen() {
                 value={form.googleCode}
               />
 
-              <AppButton variant="secondary" onPress={resetMfa}>
+              <AppButton disabled={isSubmitting} variant="secondary" onPress={resetMfa}>
                 Back
               </AppButton>
             </View>

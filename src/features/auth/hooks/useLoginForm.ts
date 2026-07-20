@@ -99,6 +99,10 @@ export function useLoginForm() {
   }
 
   function resetMfa() {
+    if (isSubmitting) {
+      return;
+    }
+
     setPhase('credentials');
     setForm((current) => ({ ...current, googleCode: '' }));
     setNotice(null);
