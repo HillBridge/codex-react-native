@@ -5,13 +5,20 @@
 ## 环境要求
 
 - Node.js >= 20.19.4
-- pnpm >= 11
+- pnpm >= 11（直接安装，不通过 Corepack 管理）
 - macOS 建议安装 Watchman，避免 Metro 出现 `EMFILE: too many open files, watch`
 
 建议使用 Node 20 LTS。Node 23 可能触发 Expo CLI 端口扫描异常：
 
 ```text
 ERR_SOCKET_BAD_PORT
+```
+
+首次使用请直接安装 pnpm，并关闭 Corepack 为 pnpm 提供的代理：
+
+```bash
+corepack disable pnpm
+npm install --global pnpm@11
 ```
 
 ## 常用命令

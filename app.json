@@ -30,7 +30,8 @@
           "configureAndroidBackup": true,
           "faceIDPermission": "Allow codex-react-native to access your Face ID biometric data."
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }

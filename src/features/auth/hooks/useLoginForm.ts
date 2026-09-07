@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { login } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
+import { API_TIMEOUT_MS } from '@/shared/constants/env';
+import { useAppForeground } from '@/shared/lifecycle';
 import { APP_ROUTES, useAppNavigation } from '@/shared/routing';
 
 type LoginForm = {
@@ -27,6 +29,8 @@ type LoginNotice = {
   message: string;
   type: 'info' | 'warning';
 };
+
+const LOGIN_SUBMIT_TIMEOUT_MS = API_TIMEOUT_MS;
 
 function onlyDigits(value: string) {
   return value.replace(/\D/g, '');
@@ -79,8 +83,28 @@ export function useLoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState<LoginNotice | null>(null);
   const [phase, setPhase] = useState<LoginPhase>('credentials');
+  const activeSubmitIdRef = useRef<number | null>(null);
+  const nextSubmitIdRef = useRef(0);
+  const submitStartedAtRef = useRef<number | null>(null);
   const navigation = useAppNavigation();
   const setSession = useAuthStore((state) => state.setSession);
+
+  useAppForeground(() => {
+    const submitStartedAt = submitStartedAtRef.current;
+
+    if (!isSubmitting || !submitStartedAt) {
+      return;
+    }
+
+    if (Date.now() - submitStartedAt <= LOGIN_SUBMIT_TIMEOUT_MS) {
+      return;
+    }
+
+    submitStartedAtRef.current = null;
+    activeSubmitIdRef.current = null;
+    setIsSubmitting(false);
+    setErrors({ form: 'Login timed out. Please try again.' });
+  });
 
   const canSubmit = useMemo(
     () =>
@@ -131,6 +155,11 @@ export function useLoginForm() {
     }
 
     setIsSubmitting(true);
+    const submitId = nextSubmitIdRef.current + 1;
+
+    nextSubmitIdRef.current = submitId;
+    activeSubmitIdRef.current = submitId;
+    submitStartedAtRef.current = Date.now();
 
     try {
       const result = await login({
@@ -140,8 +169,17 @@ export function useLoginForm() {
         password: form.password,
       });
 
+      if (activeSubmitIdRef.current !== submitId) {
+        return;
+      }
+
       if (result.type === 'authenticated') {
         await authTokenStorage.setRefreshToken(result.credentials.refreshToken);
+
+        if (activeSubmitIdRef.current !== submitId) {
+          return;
+        }
+
         setSession(result.credentials.session);
         setForm(initialForm);
         setPhase('credentials');
@@ -181,11 +219,19 @@ export function useLoginForm() {
           : result.message,
       });
     } catch (error) {
+      if (activeSubmitIdRef.current !== submitId) {
+        return;
+      }
+
       setErrors({
         form: error instanceof Error ? error.message : 'Unable to sign in.',
       });
     } finally {
-      setIsSubmitting(false);
+      if (activeSubmitIdRef.current === submitId) {
+        submitStartedAtRef.current = null;
+        activeSubmitIdRef.current = null;
+        setIsSubmitting(false);
+      }
     }
   }
 
