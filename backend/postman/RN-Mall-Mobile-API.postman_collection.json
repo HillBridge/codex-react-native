@@ -1,0 +1,322 @@
+{
+  "info": {
+    "_postman_id": "e6b0dbbc-4a1d-46ce-90b9-c448b4aa2c3b",
+    "name": "RN Mall Mobile API",
+    "description": "RN Mall 移动端后端接口。先运行“登录（演示账号）”，后续鉴权请求会自动使用返回的 accessToken；刷新令牌后会自动更新两个令牌变量。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:4006",
+      "type": "string",
+      "description": "本地服务默认地址。部署后请改为实际 API 域名，例如 https://api.example.com。"
+    },
+    {
+      "key": "email",
+      "value": "demo@example.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "nuxt-demo",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productSlug",
+      "value": "aero-desk-lamp",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('响应状态为 200', function () {",
+          "  pm.response.to.have.status(200);",
+          "});",
+          "",
+          "pm.test('响应包含追踪 ID', function () {",
+          "  const payload = pm.response.json();",
+          "  pm.expect(payload.traceId).to.match(/^[0-9a-f-]{36}$/i);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "健康检查",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": "检查后端服务是否可用。"
+      },
+      "response": []
+    },
+    {
+      "name": "认证",
+      "item": [
+        {
+          "name": "登录（演示账号）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const payload = pm.response.json();",
+                  "pm.test('登录返回访问和刷新令牌', function () {",
+                  "  pm.expect(payload.data.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(payload.data.refreshToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', payload.data.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', payload.data.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/mobile/v1/auth/login",
+            "description": "使用 collection 中的演示账号登录，并自动保存返回令牌。"
+          },
+          "response": []
+        },
+        {
+          "name": "刷新令牌",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const payload = pm.response.json();",
+                  "pm.test('刷新返回新的令牌', function () {",
+                  "  pm.expect(payload.data.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(payload.data.refreshToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('accessToken', payload.data.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', payload.data.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/mobile/v1/auth/refresh",
+            "description": "使用当前 refreshToken 换取新的 accessToken 与 refreshToken。refreshToken 只能使用一次。"
+          },
+          "response": []
+        },
+        {
+          "name": "当前用户",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('返回用户资料', function () {",
+                  "  const payload = pm.response.json();",
+                  "  pm.expect(payload.data.id).to.be.a('string').and.not.empty;",
+                  "  pm.expect(payload.data.email).to.eql(pm.collectionVariables.get('email'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/mobile/v1/auth/me",
+            "description": "读取当前 accessToken 对应的用户资料。"
+          },
+          "response": []
+        },
+        {
+          "name": "登出",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const payload = pm.response.json();",
+                  "pm.test('登出成功', function () {",
+                  "  pm.expect(payload.data).to.deep.equal({ ok: true });",
+                  "});",
+                  "pm.collectionVariables.unset('accessToken');",
+                  "pm.collectionVariables.unset('refreshToken');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/mobile/v1/auth/logout",
+            "description": "撤销当前 accessToken 对应的会话，并清空 collection 中保存的令牌。"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "商品",
+      "item": [
+        {
+          "name": "商品列表",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('返回商品数组', function () {",
+                  "  const payload = pm.response.json();",
+                  "  pm.expect(payload.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/mobile/v1/products",
+            "description": "获取全部商品。可追加 featured=true|false、category 和 q 查询参数进行筛选。"
+          },
+          "response": []
+        },
+        {
+          "name": "精选商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('仅返回精选商品', function () {",
+                  "  const payload = pm.response.json();",
+                  "  pm.expect(payload.data).to.not.be.empty;",
+                  "  payload.data.forEach((product) => pm.expect(product.featured).to.eql(true));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/mobile/v1/products?featured=true",
+            "description": "按 featured=true 筛选精选商品。"
+          },
+          "response": []
+        },
+        {
+          "name": "搜索商品",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('搜索结果匹配关键词', function () {",
+                  "  const payload = pm.response.json();",
+                  "  pm.expect(payload.data.map((product) => product.slug)).to.include('aero-desk-lamp');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/mobile/v1/products?q=desk",
+            "description": "按关键词 q 搜索商品示例。"
+          },
+          "response": []
+        },
+        {
+          "name": "商品详情",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('返回完整商品详情', function () {",
+                  "  const payload = pm.response.json();",
+                  "  pm.expect(payload.data.slug).to.eql(pm.collectionVariables.get('productSlug'));",
+                  "  pm.expect(payload.data.highlights).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/mobile/v1/products/{{productSlug}}",
+            "description": "读取 productSlug 对应的完整商品数据。"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

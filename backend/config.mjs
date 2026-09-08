@@ -1,5 +1,5 @@
 const DEFAULT_HOST = '127.0.0.1';
-const DEFAULT_PORT = 4000;
+const DEFAULT_PORT = 4006;
 const MINIMUM_SECRET_LENGTH = 32;
 
 export function loadConfig(env = process.env) {
