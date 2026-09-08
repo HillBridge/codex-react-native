@@ -67,7 +67,7 @@ app/
 - 产出 `loadConfig(env)`，返回 `{ host, port, nodeEnv, tokenSecret, trustProxy }`。
 - 产出 `GET /health`：`200 { data: { ok: true, service: 'rn-mall-mobile-api' }, traceId }`。
 
-- [ ] **Step 1：先写失败的健康检查测试**
+- [x] **Step 1：先写失败的健康检查测试**
 
 ```js
 test('GET /health returns the public health envelope', async () => {
@@ -81,13 +81,13 @@ test('GET /health returns the public health envelope', async () => {
 });
 ```
 
-- [ ] **Step 2：运行测试并确认它因缺少 `backend/app.mjs` 而失败**
+- [x] **Step 2：运行测试并确认它因缺少 `backend/app.mjs` 而失败**
 
 运行：`node --test backend/test/api.test.mjs`
 
 预期：失败信息指向无法导入 `../app.mjs`。
 
-- [ ] **Step 3：实现最小 HTTP 外壳**
+- [x] **Step 3：实现最小 HTTP 外壳**
 
 ```js
 export function createApp() {
@@ -102,13 +102,13 @@ export function createApp() {
 
 `api-response.mjs` 为每个请求生成 `randomUUID()`、写入 `x-request-id`，并将 JSON 响应设置为 UTF-8 与 `no-store`。`package.json` 添加 `backend` 与 `test:backend` 脚本，分别执行 `node backend/server.mjs` 和 `node --test backend/test/*.test.mjs`。
 
-- [ ] **Step 4：运行测试与质量检查**
+- [x] **Step 4：运行测试与质量检查**
 
 运行：`pnpm test:backend && pnpm run typecheck && pnpm run lint && pnpm run format:check`
 
 预期：后端测试通过，现有 App 类型检查、Lint 与格式检查通过。
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add package.json backend

@@ -43,6 +43,8 @@
     "ios:sandbox": "node scripts/run-with-env.mjs sandbox expo start --ios",
     "web": "expo start --web",
     "web:sandbox": "node scripts/run-with-env.mjs sandbox expo start --web",
+    "backend": "node backend/server.mjs",
+    "test:backend": "node --test backend/test/*.test.mjs",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
     "format": "prettier . --write",
