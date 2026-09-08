@@ -1,7 +1,12 @@
 import { createTraceId, writeError, writeOk } from './lib/api-response.mjs';
 import { readBearerToken } from './lib/auth.mjs';
 import { readJsonBody, HttpError } from './lib/body.mjs';
-import { getDemoUserByEmail, toUserProfile } from './data/demo-data.mjs';
+import {
+  getDemoUserByEmail,
+  products,
+  toProductSummary,
+  toUserProfile,
+} from './data/demo-data.mjs';
 import { createLoginRateLimiter } from './lib/rate-limit.mjs';
 import { createSessionStore } from './lib/sessions.mjs';
 
@@ -11,6 +16,7 @@ const allowedMethodsByPath = new Map([
   ['/mobile/v1/auth/logout', 'POST'],
   ['/mobile/v1/auth/me', 'GET'],
   ['/mobile/v1/auth/refresh', 'POST'],
+  ['/mobile/v1/products', 'GET'],
 ]);
 
 export function createApp(config) {
@@ -90,6 +96,48 @@ export function createApp(config) {
 
         sessionStore.revokeSession(session.id);
         writeOk(response, traceId, { ok: true });
+        return;
+      }
+
+      if (request.method === 'GET' && url.pathname === '/mobile/v1/products') {
+        const featured = url.searchParams.get('featured');
+
+        if (featured && featured !== 'true' && featured !== 'false') {
+          writeError(response, traceId, 422, 'VALIDATION_ERROR', '商品筛选参数不合法。');
+          return;
+        }
+
+        const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+        const category = url.searchParams.get('category') || '';
+        const data = products
+          .filter((product) => {
+            if (featured === 'true' && !product.featured) return false;
+            if (featured === 'false' && product.featured) return false;
+            if (category && product.category !== category) return false;
+            return (
+              !q ||
+              [product.name, product.series, product.category, product.summary]
+                .join(' ')
+                .toLowerCase()
+                .includes(q)
+            );
+          })
+          .map(toProductSummary);
+
+        writeOk(response, traceId, data);
+        return;
+      }
+
+      if (request.method === 'GET' && url.pathname.startsWith('/mobile/v1/products/')) {
+        const slug = decodeURIComponent(url.pathname.slice('/mobile/v1/products/'.length));
+        const product = products.find((item) => item.slug === slug);
+
+        if (!product) {
+          writeError(response, traceId, 404, 'NOT_FOUND', '商品不存在。');
+          return;
+        }
+
+        writeOk(response, traceId, product);
         return;
       }
 

@@ -104,3 +104,42 @@ test('known routes report their supported method', async () => {
     assert.equal(response.headers.get('allow'), 'POST');
   });
 });
+
+test('product catalog applies featured, category, and text filters', async () => {
+  await usingServer(async (baseUrl) => {
+    const featured = await requestJson(baseUrl, '/mobile/v1/products?featured=true');
+    const category = await requestJson(baseUrl, '/mobile/v1/products?category=%E6%95%B0%E7%A0%81');
+    const search = await requestJson(baseUrl, '/mobile/v1/products?q=desk');
+
+    assert.equal(featured.status, 200);
+    assert.deepEqual(
+      featured.body.data.map((item) => item.slug),
+      ['aero-desk-lamp', 'terra-weekender-pack', 'pulse-mini-speaker'],
+    );
+    assert.deepEqual(
+      category.body.data.map((item) => item.slug),
+      ['pulse-mini-speaker', 'modular-cable-kit'],
+    );
+    assert.deepEqual(
+      search.body.data.map((item) => item.slug),
+      ['aero-desk-lamp', 'modular-cable-kit'],
+    );
+  });
+});
+
+test('product detail returns the complete product and rejects unknown slugs', async () => {
+  await usingServer(async (baseUrl) => {
+    const product = await requestJson(baseUrl, '/mobile/v1/products/aero-desk-lamp');
+    const missing = await requestJson(baseUrl, '/mobile/v1/products/unknown-product');
+
+    assert.equal(product.status, 200);
+    assert.equal(product.body.data.stock, 34);
+    assert.deepEqual(product.body.data.highlights, [
+      '低眩光扩散灯罩',
+      '三档色温记忆',
+      '金属转轴支撑',
+    ]);
+    assert.equal(missing.status, 404);
+    assert.equal(missing.body.code, 'NOT_FOUND');
+  });
+});
