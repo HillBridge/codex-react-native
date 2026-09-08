@@ -1,145 +1,145 @@
-# RN Mall Mobile Application Design
+# RN Mall 移动商城设计
 
-## Goal
+## 目标
 
-Build a React Native mobile application that reproduces the user-facing Nuxt Pilot mall flow: featured home page, searchable product catalog, product detail, email/password login, and protected account profile. A dedicated mobile API service under this repository's `backend/` directory will serve the app through `https://api.rn-mall.com/mobile/v1`.
+在当前 React Native 项目中实现与 Nuxt Pilot 商城一致的用户流程：精选首页、可搜索的商品流、商品详情、邮箱密码登录，以及受保护的账户资料页。当前仓库的 `backend/` 目录将提供 App 专属的移动 API，公网地址为 `https://api.rn-mall.com/mobile/v1`。
 
-The first release is a self-contained demonstration environment. It uses the same six demo products and one demo user as the Nuxt project. It does not connect to a production identity provider, database, order system, cart, or payment service.
+首个版本是可独立运行的演示环境：使用与 Nuxt 项目相同的六件演示商品和一个演示用户；不接入真实身份系统、数据库、订单、购物车或支付服务。
 
-## Non-goals
+## 不在本次范围内
 
-- Changing the Nuxt application, its Koa backend, its Web BFF, or its Cookie session behavior.
-- Exposing the Nuxt BFF service token or its HMAC signing secret to a mobile client.
-- Implementing cart persistence, favorites, checkout, payment, registration, password recovery, or remote product administration.
-- Adding third-party runtime or test dependencies.
+- 不改动 Nuxt 应用、其 Koa 后端、Web BFF 或 Cookie 会话机制。
+- 不向移动端泄露 Nuxt BFF 的服务凭证或 HMAC 签名密钥。
+- 不实现持久购物车、收藏、结算、支付、注册、找回密码或商品后台管理。
+- 不增加第三方运行时或测试依赖。
 
-## Target architecture
+## 目标架构
 
 ```text
-React Native app
+React Native App
   | HTTPS + Bearer access token
   v
 https://api.rn-mall.com/mobile/v1
-  | reverse proxy terminates TLS and forwards privately
+  | 反向代理终止 TLS，并在内网转发
   v
-current repository: backend/ Node HTTP service
-  | in-memory demo sessions and copied demo catalog
+当前仓库 backend/ 下的 Node HTTP 服务
+  | 内存演示会话与演示商品目录
   v
-JSON response: { data, traceId }
+JSON 响应：{ data, traceId }
 
-Nuxt Web app -> Nuxt /api BFF -> Nuxt Koa backend
+Nuxt Web -> Nuxt /api BFF -> Nuxt Koa backend
 ```
 
-The mobile API is intentionally separate from the Nuxt Web BFF. Web uses an httpOnly Cookie plus CSRF protection and service-to-service HMAC authentication. The mobile app uses short-lived Bearer access tokens and stored refresh tokens. These trust models must not be mixed.
+移动 API 与 Nuxt Web BFF 必须保持独立。Web 端采用 httpOnly Cookie、CSRF 防护和服务间 HMAC 鉴权；App 采用短期 Bearer access token 与安全保存的 refresh token。两套信任模型不可混用。
 
-## Deployment and domain boundary
+## 域名与部署边界
 
-Production mobile requests use the exact base URL `https://api.rn-mall.com/mobile/v1`.
+生产环境的移动端基础地址固定为 `https://api.rn-mall.com/mobile/v1`。
 
-The Node service listens on a private interface and port, defaulting to `127.0.0.1:4000`. A reverse proxy or managed load balancer owns the public DNS record and TLS certificate for `api.rn-mall.com`, forwards only the required paths to the process, sets `X-Forwarded-For` and `X-Forwarded-Proto`, and enforces an HTTPS redirect at the edge.
+Node 服务只监听内网接口和端口，默认是 `127.0.0.1:4000`。反向代理或托管负载均衡器负责 `api.rn-mall.com` 的 DNS、TLS 证书、HTTPS 强制跳转，并仅把允许的路径转发给该服务；同时传递 `X-Forwarded-For` 和 `X-Forwarded-Proto`。
 
-Development runs the service locally. Native-device testing requires an HTTPS tunnel or a LAN-reachable development address; a phone cannot use its own `127.0.0.1` to reach the developer machine. The React Native configuration change that points the app at the mobile base URL is deferred to the frontend integration phase, so existing real environment files remain untouched during backend work.
+开发时服务可本机运行。真机不能通过自身的 `127.0.0.1` 访问开发机，因此须使用 HTTPS 隧道或局域网可达的开发地址。将 React Native 配置改为该移动 API 地址属于后续前端接入阶段；本次后端阶段不改动现有真实环境文件。
 
-## Mobile API contract
+## 移动 API 契约
 
-Every successful response is `200` and has this shape:
+所有成功响应均为 `200`，格式如下：
 
 ```json
 { "data": {}, "traceId": "request-id" }
 ```
 
-Every expected failure has a matching HTTP status and this shape:
+所有可预期失败均使用匹配的 HTTP 状态码，格式如下：
 
 ```json
 { "code": "UNAUTHORIZED", "message": "...", "traceId": "request-id" }
 ```
 
-The allowed error codes are `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `RATE_LIMITED`, and `INTERNAL_ERROR`. Error details are never returned in production.
+错误码限定为：`BAD_REQUEST`、`UNAUTHORIZED`、`FORBIDDEN`、`NOT_FOUND`、`VALIDATION_ERROR`、`RATE_LIMITED` 与 `INTERNAL_ERROR`。生产环境绝不返回内部错误详情。
 
-### Health
+### 健康检查
 
-`GET /health` returns `{ data: { ok: true, service: "rn-mall-mobile-api" }, traceId }`. It is for infrastructure health checks only and does not disclose configuration or user data.
+`GET /health` 返回 `{ data: { ok: true, service: "rn-mall-mobile-api" }, traceId }`。它只供基础设施探活，不暴露配置或用户数据。
 
-### Authentication
+### 认证
 
 `POST /mobile/v1/auth/login`
 
-Request:
+请求：
 
 ```json
 { "email": "demo@example.com", "password": "nuxt-demo" }
 ```
 
-Success data contains `accessToken`, `refreshToken`, and the public user profile. Invalid credentials deliberately return the same `401 UNAUTHORIZED` response regardless of whether the email is known.
+成功时，`data` 包含 `accessToken`、`refreshToken` 和公开用户资料。无论邮箱是否存在，错误凭证均返回相同的 `401 UNAUTHORIZED`，避免泄露用户是否存在。
 
 `POST /mobile/v1/auth/refresh`
 
-Request:
+请求：
 
 ```json
 { "refreshToken": "opaque-token" }
 ```
 
-Success returns a newly minted access token, a replacement refresh token, and the user profile. Refresh tokens rotate: the old token becomes unusable before the response is returned.
+成功时返回新的 access token、替换后的 refresh token 和用户资料。refresh token 在刷新时轮换，旧 token 在返回响应前即失效。
 
-`GET /mobile/v1/auth/me` requires `Authorization: Bearer <accessToken>` and returns the public user profile.
+`GET /mobile/v1/auth/me` 要求携带 `Authorization: Bearer <accessToken>`，返回公开用户资料。
 
-`POST /mobile/v1/auth/logout` requires the same Bearer token and returns `{ ok: true }`. It invalidates the active server-side session, including the refresh token. Any previously issued access token for the session fails thereafter.
+`POST /mobile/v1/auth/logout` 也要求 Bearer token，返回 `{ ok: true }`，并立即注销对应的服务端会话及其 refresh token。此后该会话签发的 access token 也不能再使用。
 
-### Products
+### 商品
 
-`GET /mobile/v1/products?q=&category=&featured=` is public. `q` searches product name, series, category, and summary case-insensitively. `category` is an exact category. `featured=true` returns only featured products. Invalid `featured` values return `422 VALIDATION_ERROR`.
+`GET /mobile/v1/products?q=&category=&featured=` 为公开接口。`q` 对商品名、系列、分类和摘要做不区分大小写的检索；`category` 精确筛选分类；`featured=true` 仅返回精选商品。非法的 `featured` 值返回 `422 VALIDATION_ERROR`。
 
-`GET /mobile/v1/products/:slug` is public and returns the detail product payload. Missing products return `404 NOT_FOUND`.
+`GET /mobile/v1/products/:slug` 为公开接口，返回商品详情；商品不存在时返回 `404 NOT_FOUND`。
 
-Product summaries and detail payloads match the Nuxt shapes exactly. The mobile service begins with a versioned copy of the Nuxt demo catalog. Moving both projects to a shared package or a real catalog service becomes necessary only once demo data becomes mutable.
+商品摘要和详情字段必须与 Nuxt 契约完全一致。移动服务第一版保存一份带版本的 Nuxt 演示商品快照；仅当演示数据需要修改时，才需要将两个项目迁移至共享包或真实商品服务。
 
-## Token and session design
+## 令牌与会话设计
 
-Access tokens are signed, compact HMAC-SHA-256 tokens with `sub`, `sid`, `kind: "access"`, and an expiry of 15 minutes. The signing key is `MOBILE_API_TOKEN_SECRET`; production refuses to start without a suitably long secret.
+access token 是使用 HMAC-SHA-256 签名的紧凑令牌，包含 `sub`、`sid`、`kind: "access"` 与过期时间，有效期为 15 分钟。签名密钥来自 `MOBILE_API_TOKEN_SECRET`；生产环境若没有足够长度的密钥，服务拒绝启动。
 
-Refresh tokens are 32-byte opaque random values with a 30-day expiry. The service stores only their SHA-256 digest alongside the session ID, user ID, and expiry. Sessions remain in memory for this demo release. A restart intentionally logs users out because the session map is cleared. That limitation is explicit and will be replaced by a persistent session store before a real-user release.
+refresh token 是 32 字节的随机不透明值，有效期 30 天。服务端只保存其 SHA-256 摘要，以及关联的会话 ID、用户 ID 和过期时间。首个演示版本的会话存于内存，服务重启会清空会话并使用户重新登录；正式支持真实用户前，必须替换为持久化会话存储。
 
-The React Native app keeps the access token in Zustand memory and the refresh token in the existing SecureStore wrapper. It sends only the access token as a Bearer token. It must never store passwords, service credentials, or the token signing secret.
+React Native App 的 access token 仅保留在 Zustand 内存中，refresh token 继续使用现有 SecureStore 封装保存。请求只发送 access token；App 绝不保存密码、服务端凭证或令牌签名密钥。
 
-## Server safeguards
+## 服务端安全措施
 
-- Require JSON for request bodies and cap a parsed body at 16 KiB.
-- Generate a UUID trace ID unless a valid inbound request ID is supplied; return it in the response header and payload.
-- Apply safe baseline response headers: `X-Content-Type-Options`, `Referrer-Policy`, `Cache-Control: no-store` for auth responses, and a restrictive permissions policy.
-- Rate-limit login attempts in memory by source address to five attempts per 15 minutes. For a reverse-proxy deployment, source extraction trusts forwarded headers only when `TRUST_PROXY=true` is explicitly configured.
-- Do not log Authorization headers, refresh tokens, passwords, or response bodies containing tokens.
-- Parse only the explicit methods and routes listed above. Reply with `404 NOT_FOUND` for unrecognized routes and `405` with `Allow` when a known route receives an unsupported method.
-- CORS is not needed for native apps. Browser origins are denied by default; if Expo Web support is intentionally introduced later, allowed origins will be configured explicitly rather than using `*`.
+- 仅接受 JSON 请求体，解析后的最大请求体为 16 KiB。
+- 若请求未提供合法的请求 ID，则生成 UUID；在响应头与响应体中返回 `traceId`。
+- 设置基础安全响应头：`X-Content-Type-Options`、`Referrer-Policy`、认证响应的 `Cache-Control: no-store`，以及严格的权限策略。
+- 以内存方式按来源 IP 限制登录：每 15 分钟最多 5 次。只有明确配置 `TRUST_PROXY=true` 时，才信任反向代理传入的地址头。
+- 日志不得记录 Authorization、refresh token、密码，或包含令牌的响应体。
+- 仅解析本文档列出的路径与方法。未知路径返回 `404 NOT_FOUND`；已知路径使用了不允许的方法时返回 `405` 和 `Allow`。
+- 原生 App 不需要 CORS。浏览器来源默认拒绝；若未来显式支持 Expo Web，再以配置白名单开放，绝不使用 `*`。
 
-## React Native application design
+## React Native App 设计
 
-The existing Expo Router project remains feature-oriented.
+现有 Expo Router 项目继续保持 feature-oriented 的组织方式。
 
-- `auth` is adapted from the current unrelated phone/OAuth workflow to the mobile API's email/password flow. The existing access-token-in-memory and refresh-token-in-SecureStore lifecycle is retained.
-- `products` owns API calls, types, catalog query state, product cards, catalog screen, and detail screen.
-- `home` shows the Nuxt featured-products hero content adapted to native layout and a featured product list.
-- `profile` renders the Nuxt account data and logout action behind the existing protected route mechanism.
-- Expo Router provides a protected application area with Home, Products, Product Detail, and Profile routes. Native navigation replaces Nuxt header/footer and SSR-specific route concerns.
-- All product fetching is client-side. Nuxt SSR, SEO meta tags, and server route cache rules have no React Native equivalent and are intentionally not reproduced.
+- `auth` 从当前无关的手机号/OAuth 协议改为移动 API 的邮箱密码协议，保留 access token 仅在内存、refresh token 使用 SecureStore 的既有生命周期。
+- `products` 负责商品 API、类型、筛选查询状态、商品卡片、商品流页面与详情页。
+- `home` 将 Nuxt 的精选商品首页内容适配为原生布局，并展示精选列表。
+- `profile` 使用 Nuxt 同样的账户资料字段，并提供退出登录操作，受现有受保护路由约束。
+- Expo Router 提供受保护应用区，包含首页、商品流、商品详情和资料页。原生导航替代 Nuxt 的页头、页脚及 SSR 路由机制。
+- 所有商品数据都在客户端请求。Nuxt 的 SSR、SEO Meta 与服务端路由缓存没有 React Native 对应能力，不做迁移。
 
-The first native UI reproduces information architecture and interaction behavior, not pixel-identical Web CSS. Product image URLs remain remote Unsplash URLs; image loading and error states are handled natively.
+首版原生界面复刻 Nuxt 的信息架构和交互，不追求 Web CSS 像素级一致。商品仍使用 Unsplash 远程图片地址，并在原生侧处理加载和失败状态。
 
-## File ownership
+## 文件职责
 
-Backend work will live entirely in `backend/` with focused modules for HTTP routing, response writing, request validation, token/session management, rate limiting, demo data, and tests. `package.json` receives only scripts for running and testing the Node-native service; no dependency is added.
+后端代码全部位于 `backend/`，按 HTTP 路由、响应写入、请求校验、令牌/会话、限流、演示数据和测试拆分为单一职责模块。`package.json` 只增加运行与测试该 Node 原生服务的脚本，不增加依赖。
 
-Frontend work uses `src/features/auth`, `src/features/products`, `src/features/home`, `src/features/profile`, and lightweight Expo Router route composition under `app/`. Shared API transport changes remain limited to the explicitly authorized authentication migration; the existing SecureStore key and storage medium are not changed.
+前端使用 `src/features/auth`、`src/features/products`、`src/features/home`、`src/features/profile` 和 `app/` 下轻量的 Expo Router 路由组合。共享 API 传输层仅在已授权的认证迁移范围内改动；现有 SecureStore key 与存储介质不变。
 
-## Verification and acceptance criteria
+## 验收与验证
 
-Backend tests use Node's built-in test runner and cover successful and rejected login, login rate limiting, refresh rotation, invalidated logout sessions, authenticated profile reads, product filters, product detail/not-found behavior, error envelopes, and token-free logs.
+后端以 Node 内置测试运行器覆盖：成功/失败登录、登录限流、refresh token 轮换、退出后会话失效、认证资料读取、商品筛选、商品详情及不存在商品、错误响应契约，以及日志不泄露令牌。
 
-The React Native verification phase covers cold-start session restoration, expired access-token refresh and retry, logout, protected-route redirects, featured catalog load, filtering, detail navigation, and failure/retry states. It runs the repository type check, lint, formatter check, and relevant backend tests. Real-device verification uses a valid HTTPS `api.rn-mall.com` deployment or tunnel.
+React Native 阶段验证：冷启动恢复会话、access token 过期后的刷新与重试、退出登录、受保护路由重定向、精选商品加载、筛选、详情导航和失败重试状态；同时运行类型检查、Lint、格式检查及相关后端测试。真机验证使用有效 HTTPS 的 `api.rn-mall.com` 部署或隧道。
 
-## Delivery sequence
+## 交付顺序
 
-1. Establish and test the standalone mobile API, including deployment configuration documentation for `api.rn-mall.com`.
-2. Replace the app's unrelated auth request contract while preserving SecureStore-based refresh-token handling.
-3. Implement catalog, detail, home, and profile features against the mobile API.
-4. Verify native navigation, session lifecycle, API errors, and a deployed HTTPS endpoint.
+1. 建立并验证独立移动 API，补充 `api.rn-mall.com` 的部署配置说明。
+2. 替换 App 当前无关的认证请求契约，同时保留 SecureStore 的 refresh token 处理方式。
+3. 基于移动 API 实现商品流、详情、首页和资料 feature。
+4. 验证原生导航、会话生命周期、API 错误处理及已部署的 HTTPS 地址。
