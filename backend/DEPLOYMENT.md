@@ -11,6 +11,10 @@
 
 服务命令：`pnpm backend`。健康检查：`GET /health`。
 
+## Docker Compose（推荐）
+
+在服务器的仓库根目录创建未提交的 `.env`，只包含 `MOBILE_API_TOKEN_SECRET`。使用 `openssl rand -base64 48` 生成它，然后运行 `docker compose up -d --build`。Compose 不发布 API 的 4000 端口；Caddy 仅暴露 80/443 并自动申请 TLS 证书。
+
 ## Nginx 示例
 
 ```nginx

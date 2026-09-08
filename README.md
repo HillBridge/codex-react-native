@@ -38,6 +38,8 @@ pnpm test:backend
 
 移动端专属 API 位于 `backend/`。本地默认地址为 `http://127.0.0.1:4000`，生产域名为 `https://api.rn-mall.com/mobile/v1`。部署与反向代理要求见 [backend/DEPLOYMENT.md](backend/DEPLOYMENT.md)。
 
+生产部署可使用 `docker compose up -d --build` 启动 API 与自动 HTTPS 代理；密钥只保存在服务器的未提交 `.env` 中。
+
 ## 环境变量
 
 默认 dev 环境配置在 `.env.development`：

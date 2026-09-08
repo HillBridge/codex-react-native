@@ -1,0 +1,23 @@
+services:
+  api:
+    build: .
+    environment:
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 4000
+      MOBILE_API_TOKEN_SECRET: ${MOBILE_API_TOKEN_SECRET:?Set MOBILE_API_TOKEN_SECRET in .env}
+      NODE_ENV: production
+      TRUST_PROXY: 'true'
+    expose: ['4000']
+    restart: unless-stopped
+  caddy:
+    image: caddy:2
+    depends_on: [api]
+    ports: ['80:80', '443:443']
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+volumes:
+  caddy_data:
+  caddy_config:
