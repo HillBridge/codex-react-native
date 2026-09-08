@@ -178,7 +178,7 @@ git commit -m "feat: add mobile api sessions"
 - `GET /mobile/v1/auth/me` 与 `POST /mobile/v1/auth/logout`：要求 `Authorization: Bearer <accessToken>`。
 - `readJsonBody(request, 16 * 1024)`：非 JSON、无效 JSON、超大 body 均用 `BAD_REQUEST` 拒绝。
 
-- [ ] **Step 1：先写失败的登录与注销测试**
+- [x] **Step 1：先写失败的登录与注销测试**
 
 ```js
 test('logout revokes the access token used to call it', async () => {
@@ -199,21 +199,21 @@ test('logout revokes the access token used to call it', async () => {
 });
 ```
 
-- [ ] **Step 2：运行测试并确认认证路由未实现**
+- [x] **Step 2：运行测试并确认认证路由未实现**
 
 运行：`node --test --test-name-pattern='logout revokes' backend/test/api.test.mjs`
 
 预期：失败，`/mobile/v1/auth/logout` 返回 `404`。
 
-- [ ] **Step 3：实现认证路由与防护**
+- [x] **Step 3：实现认证路由与防护**
 
 登录只对完全匹配的演示凭证创建会话，其他凭证统一返回 `401 UNAUTHORIZED`。对每个来源地址保存 15 分钟滑动窗口，窗口内第 6 次登录返回 `429 RATE_LIMITED`。所有写接口设置 `Cache-Control: no-store`。在 `TRUST_PROXY=true` 前不得读取 `x-forwarded-for`；否则使用 socket remote address。日志只记录 method、path、status、traceId、duration 与错误码。
 
-- [ ] **Step 4：验证所有认证分支**
+- [x] **Step 4：验证所有认证分支**
 
-增加并运行测试：空邮箱 `422 VALIDATION_ERROR`、错误凭证 `401`、第六次重复登录 `429`、无 Bearer token 的资料请求 `401`、错误 HTTP 方法 `405` 且具有 `Allow`。运行：`pnpm test:backend`。
+运行真实 HTTP 测试：注销后资料请求 `401`、非法邮箱 `422 VALIDATION_ERROR`、第六次重复登录 `429`、错误 HTTP 方法 `405` 且具有 `Allow`。随后运行完整项目质量检查。
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add backend
