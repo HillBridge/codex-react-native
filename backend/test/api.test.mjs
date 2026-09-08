@@ -13,3 +13,32 @@ test('GET /health returns the public health envelope', async () => {
     assert.equal(response.headers.get('cache-control'), 'no-store');
   });
 });
+
+test('a refresh token can be used exactly once', async () => {
+  await usingServer(async (baseUrl) => {
+    const login = await requestJson(baseUrl, '/mobile/v1/auth/login', {
+      body: JSON.stringify({ email: 'demo@example.com', password: 'nuxt-demo' }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
+    });
+
+    assert.equal(login.status, 200);
+
+    const refreshToken = login.body.data.refreshToken;
+    const refreshed = await requestJson(baseUrl, '/mobile/v1/auth/refresh', {
+      body: JSON.stringify({ refreshToken }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
+    });
+    const reused = await requestJson(baseUrl, '/mobile/v1/auth/refresh', {
+      body: JSON.stringify({ refreshToken }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
+    });
+
+    assert.equal(refreshed.status, 200);
+    assert.notEqual(refreshed.body.data.refreshToken, refreshToken);
+    assert.equal(reused.status, 401);
+    assert.equal(reused.body.code, 'UNAUTHORIZED');
+  });
+});

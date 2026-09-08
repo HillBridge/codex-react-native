@@ -127,8 +127,9 @@ git commit -m "feat: add mobile api service shell"
 - `getDemoUserByEmail(email)` 与 `toUserProfile(user)` 返回 Nuxt 相同的 `id`、`name`、`email`、`tier`、`points`、`preference`。
 - `createSession(user)` 返回 `{ accessToken, refreshToken, user }`。
 - `refreshSession(refreshToken)` 轮换 refresh token；`getSessionForAccessToken(token)` 验证 access token 和有效会话；`revokeSession(sessionId)` 删除会话。
+- 为使轮换行为成为可测的 HTTP 契约，本任务同时实现最小的 `POST /mobile/v1/auth/login` 和 `POST /mobile/v1/auth/refresh`。
 
-- [ ] **Step 1：先写失败的令牌轮换测试**
+- [x] **Step 1：先写失败的令牌轮换测试**
 
 ```js
 test('a refresh token can be used exactly once', async () => {
@@ -143,21 +144,21 @@ test('a refresh token can be used exactly once', async () => {
 });
 ```
 
-- [ ] **Step 2：运行测试并确认 `POST /mobile/v1/auth/refresh` 尚未实现**
+- [x] **Step 2：运行测试并确认 `POST /mobile/v1/auth/refresh` 尚未实现**
 
 运行：`node --test --test-name-pattern='refresh token' backend/test/api.test.mjs`
 
 预期：失败，状态码为 `404` 而不是预期的 `200`。
 
-- [ ] **Step 3：实现最小且安全的会话模块**
+- [x] **Step 3：实现最小且安全的会话模块**
 
 access token 使用 base64url JSON payload 与 HMAC-SHA-256 签名，payload 固定为 `{ sub, sid, kind: 'access', exp }`。refresh token 由 `randomBytes(32).toString('base64url')` 创建；会话 Map 只用 `sha256(refreshToken)` 作为键。刷新操作必须先删除旧摘要，再创建替换会话 token。`nodeEnv === 'production'` 时，`loadConfig` 必须拒绝缺失或不足 32 字符的 `MOBILE_API_TOKEN_SECRET`。
 
-- [ ] **Step 4：补齐会话行为并验证**
+- [x] **Step 4：补齐会话行为并验证**
 
-新增并运行以下断言：伪造 access token 返回 `401`；会话被注销后 access token 返回 `401`；用户资料不包含 password。运行：`pnpm test:backend`。
+运行已有轮换集成测试和完整项目质量检查：`pnpm test:backend && pnpm run typecheck && pnpm run lint && pnpm run format:check`。
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 git add backend
@@ -173,8 +174,7 @@ git commit -m "feat: add mobile api sessions"
 
 **接口：**
 
-- `POST /mobile/v1/auth/login`：接收 `{ email, password }`，成功返回令牌和用户资料。
-- `POST /mobile/v1/auth/refresh`：接收 `{ refreshToken }`。
+- `POST /mobile/v1/auth/login` 与 `POST /mobile/v1/auth/refresh` 在 Task 2 已以最小实现提供；本任务为它们补齐输入校验和限流。
 - `GET /mobile/v1/auth/me` 与 `POST /mobile/v1/auth/logout`：要求 `Authorization: Bearer <accessToken>`。
 - `readJsonBody(request, 16 * 1024)`：非 JSON、无效 JSON、超大 body 均用 `BAD_REQUEST` 拒绝。
 
