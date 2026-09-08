@@ -21,11 +21,20 @@ const allowedMethodsByPath = new Map([
 
 export function createApp(config) {
   const loginRateLimiter = createLoginRateLimiter();
+  const logger = config.logger || console;
   const sessionStore = createSessionStore({ tokenSecret: config.tokenSecret });
 
   return async function app(request, response) {
+    const startedAt = Date.now();
     const traceId = createTraceId(request);
     const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+
+    response.once('finish', () => {
+      const durationMs = Date.now() - startedAt;
+      logger.info(
+        `HTTP ${request.method} ${url.pathname} ${response.statusCode} ${durationMs}ms traceId=${traceId}`,
+      );
+    });
 
     try {
       if (request.method === 'GET' && url.pathname === '/health') {

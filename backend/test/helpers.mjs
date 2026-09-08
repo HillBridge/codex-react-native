@@ -17,8 +17,8 @@ export async function requestJson(baseUrl, path, options = {}) {
   return { body, headers: response.headers, status: response.status };
 }
 
-export async function usingServer(run) {
-  const server = createServer(createApp(testConfig));
+export async function usingServer(run, configOverrides = {}) {
+  const server = createServer(createApp({ ...testConfig, ...configOverrides }));
 
   await new Promise((resolve, reject) => {
     server.once('error', reject);

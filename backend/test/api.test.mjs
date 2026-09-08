@@ -14,6 +14,28 @@ test('GET /health returns the public health envelope', async () => {
   });
 });
 
+test('requests are logged without request bodies or headers', async () => {
+  const logEntries = [];
+
+  await usingServer(
+    async (baseUrl) => {
+      const response = await requestJson(baseUrl, '/health');
+
+      assert.equal(response.status, 200);
+    },
+    {
+      logger: {
+        info(entry) {
+          logEntries.push(entry);
+        },
+      },
+    },
+  );
+
+  assert.equal(logEntries.length, 1);
+  assert.match(logEntries[0], /^HTTP GET \/health 200 \d+ms traceId=[0-9a-f-]{36}$/i);
+});
+
 test('a refresh token can be used exactly once', async () => {
   await usingServer(async (baseUrl) => {
     const login = await requestJson(baseUrl, '/mobile/v1/auth/login', {
