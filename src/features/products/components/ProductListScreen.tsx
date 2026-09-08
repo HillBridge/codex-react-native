@@ -25,9 +25,16 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.topRow}>
           <Text style={styles.title}>{featured ? '精选商品' : '商品流'}</Text>
-          <Pressable onPress={() => router.push('/profile')}>
-            <Text style={styles.profile}>账户</Text>
-          </Pressable>
+          <View style={styles.actions}>
+            {featured ? (
+              <Pressable onPress={() => router.push('/products')}>
+                <Text style={styles.profile}>全部商品</Text>
+              </Pressable>
+            ) : null}
+            <Pressable onPress={() => router.push('/profile')}>
+              <Text style={styles.profile}>账户</Text>
+            </Pressable>
+          </View>
         </View>
         {!featured ? (
           <TextInput
@@ -73,6 +80,7 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
 const styles = StyleSheet.create({
   content: { gap: spacing.md, paddingBottom: spacing.xl },
   topRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  actions: { flexDirection: 'row', gap: spacing.md },
   title: { color: colors.text, fontSize: 30, fontWeight: '800' },
   input: {
     backgroundColor: colors.surface,

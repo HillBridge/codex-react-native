@@ -30,7 +30,13 @@ pnpm android
 pnpm ios
 pnpm web
 pnpm quality
+pnpm backend
+pnpm test:backend
 ```
+
+## 移动商城 API
+
+移动端专属 API 位于 `backend/`。本地默认地址为 `http://127.0.0.1:4000`，生产域名为 `https://api.rn-mall.com/mobile/v1`。部署与反向代理要求见 [backend/DEPLOYMENT.md](backend/DEPLOYMENT.md)。
 
 ## 环境变量
 
