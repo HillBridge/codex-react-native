@@ -5,6 +5,9 @@ export type AuthUser = {
   id: string;
   name: string;
   phone?: string;
+  points?: number;
+  preference?: string;
+  tier?: string;
 };
 
 export type AuthSession = {

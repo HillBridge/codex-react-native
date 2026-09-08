@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getProducts } from '@/features/products/api/productsApi';
 import type { ProductSummary } from '@/features/products/types';
@@ -23,7 +23,12 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{featured ? '精选商品' : '商品流'}</Text>
+        <View style={styles.topRow}>
+          <Text style={styles.title}>{featured ? '精选商品' : '商品流'}</Text>
+          <Pressable onPress={() => router.push('/profile')}>
+            <Text style={styles.profile}>账户</Text>
+          </Pressable>
+        </View>
         {!featured ? (
           <TextInput
             placeholder="搜索商品"
@@ -51,6 +56,7 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
               style={styles.card}
               onPress={() => router.push(`/products/${item.slug}`)}
             >
+              <Image source={{ uri: item.image }} style={styles.image} />
               <Text style={styles.kicker}>
                 {item.category} / {item.series}
               </Text>
@@ -66,6 +72,7 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
 }
 const styles = StyleSheet.create({
   content: { gap: spacing.md, paddingBottom: spacing.xl },
+  topRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   title: { color: colors.text, fontSize: 30, fontWeight: '800' },
   input: {
     backgroundColor: colors.surface,
@@ -88,4 +95,6 @@ const styles = StyleSheet.create({
   kicker: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   name: { color: colors.text, fontSize: 18, fontWeight: '800' },
   price: { color: colors.text, fontSize: 17, fontWeight: '800' },
+  profile: { color: colors.primary, fontWeight: '700' },
+  image: { backgroundColor: colors.border, borderRadius: 8, height: 180, width: '100%' },
 });
