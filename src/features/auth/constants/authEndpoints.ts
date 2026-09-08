@@ -1,4 +1,5 @@
 export const AUTH_ENDPOINTS = {
-  login: '/api/v1/oauth2/token',
-  refreshToken: '/api/v1/oauth2/refresh',
+  login: '/mobile/v1/auth/login',
+  logout: '/mobile/v1/auth/logout',
+  refreshToken: '/mobile/v1/auth/refresh',
 } as const;

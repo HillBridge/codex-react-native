@@ -29,20 +29,23 @@ export async function handleApiAuthResponse(
   response: AxiosResponse,
   retryRequestWithAccessToken: RetryRequestWithAccessToken,
 ) {
-  if (!isApiEnvelope(response.data)) {
+  if (!isApiEnvelope(response.data) && response.status !== 401) {
     return null;
   }
 
   const originalConfig = response.config as RetryableRequestConfig;
 
-  if (isRefreshTokenExpired(response.data)) {
+  const isUnauthorizedHttpResponse = response.status === 401;
+
+  if (isApiEnvelope(response.data) && isRefreshTokenExpired(response.data)) {
     await notifyUnauthorized();
 
     return rejectSessionExpired(getApiMessage(response.data));
   }
 
   if (
-    !isAccessTokenExpired(response.data) ||
+    (!(isApiEnvelope(response.data) && isAccessTokenExpired(response.data)) &&
+      !isUnauthorizedHttpResponse) ||
     originalConfig._authRetry ||
     isAuthRefreshIgnored(originalConfig.url)
   ) {

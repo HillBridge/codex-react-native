@@ -45,6 +45,14 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     apiLogger.error(error);
 
+    if (error.response) {
+      const retried = await handleApiAuthResponse(error.response, retryRequestWithAccessToken);
+
+      if (retried) {
+        return retried;
+      }
+    }
+
     if (error.response?.status === 401) {
       await notifyUnauthorized();
     }
