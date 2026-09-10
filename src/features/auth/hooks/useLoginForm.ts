@@ -5,9 +5,10 @@ import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
 import { APP_ROUTES, useAppNavigation } from '@/shared/routing';
 
-type Form = { email: string; password: string };
-type Errors = Partial<Record<keyof Form | 'form', string>>;
-const initialForm: Form = { email: 'demo@example.com', password: 'nuxt-demo' };
+import { type LoginForm, type LoginFormErrors, validateLoginForm } from './loginFormValidation';
+
+type Errors = LoginFormErrors & { form?: string };
+const initialForm: LoginForm = { email: 'demo@example.com', password: 'nuxt-demo' };
 
 export function useLoginForm() {
   const [form, setForm] = useState(initialForm);
@@ -20,15 +21,13 @@ export function useLoginForm() {
     [form, isSubmitting],
   );
 
-  function updateField(name: keyof Form, value: string) {
+  function updateField(name: keyof LoginForm, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined, form: undefined }));
   }
 
   async function submit() {
-    const nextErrors: Errors = {};
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) nextErrors.email = '请输入有效邮箱。';
-    if (!form.password) nextErrors.password = '请输入密码。';
+    const nextErrors = validateLoginForm(form);
     if (Object.keys(nextErrors).length) return setErrors(nextErrors);
     setIsSubmitting(true);
     try {

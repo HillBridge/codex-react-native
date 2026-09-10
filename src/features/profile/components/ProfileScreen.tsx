@@ -10,19 +10,21 @@ export function ProfileScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.kicker}>账户</Text>
-        <Text style={styles.title}>{user?.name || '会员'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.kicker}>账户</Text>
+          <Text style={styles.title}>{user?.name || '会员'}</Text>
+          <Text style={styles.email}>{user?.email}</Text>
+        </View>
+        <View style={styles.card}>
+          <Row label="会员等级" value={user?.tier || '-'} />
+          <Row label="积分" value={user?.points?.toLocaleString('zh-CN') || '-'} />
+          <Row label="偏好" value={user?.preference || '-'} />
+        </View>
+        <AppButton accessibilityLabel="退出登录" variant="secondary" onPress={signOut}>
+          退出登录
+        </AppButton>
       </View>
-      <View style={styles.card}>
-        <Row label="会员等级" value={user?.tier || '-'} />
-        <Row label="积分" value={user?.points?.toLocaleString('zh-CN') || '-'} />
-        <Row label="偏好" value={user?.preference || '-'} />
-      </View>
-      <AppButton variant="secondary" onPress={signOut}>
-        退出登录
-      </AppButton>
     </Screen>
   );
 }
@@ -37,6 +39,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  content: { alignSelf: 'center', maxWidth: 640, width: '100%' },
   header: { gap: spacing.xs, marginBottom: spacing.lg },
   kicker: { color: colors.primary, fontWeight: '700' },
   title: { color: colors.text, fontSize: 30, fontWeight: '800' },

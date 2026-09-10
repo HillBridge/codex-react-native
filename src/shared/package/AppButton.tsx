@@ -4,6 +4,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { colors, spacing } from '@/shared/constants/theme';
 
 type AppButtonProps = PropsWithChildren<{
+  accessibilityHint?: string;
+  accessibilityLabel?: string;
   disabled?: boolean;
   loading?: boolean;
   variant?: 'primary' | 'secondary';
@@ -11,6 +13,8 @@ type AppButtonProps = PropsWithChildren<{
 }>;
 
 export function AppButton({
+  accessibilityHint,
+  accessibilityLabel,
   children,
   disabled = false,
   loading = false,
@@ -21,7 +25,10 @@ export function AppButton({
 
   return (
     <Pressable
+      accessibilityHint={accessibilityHint}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      accessibilityState={{ busy: loading, disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
       style={({ pressed }) => [

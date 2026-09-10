@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import type { TextInputProps } from 'react-native';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -8,19 +9,31 @@ type FormTextInputProps = TextInputProps & {
   label: string;
 };
 
-export function FormTextInput({ error, label, style, ...inputProps }: FormTextInputProps) {
+export const FormTextInput = forwardRef<TextInput, FormTextInputProps>(function FormTextInput(
+  { accessibilityHint, accessibilityLabel, error, label, style, ...inputProps },
+  ref,
+) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         {...inputProps}
+        ref={ref}
+        accessibilityHint={error || accessibilityHint}
+        accessibilityLabel={accessibilityLabel || label}
         placeholderTextColor={colors.mutedText}
         style={[styles.input, error ? styles.inputError : null, style]}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text accessibilityLiveRegion="polite" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
-}
+});
+
+FormTextInput.displayName = 'FormTextInput';
 
 const styles = StyleSheet.create({
   container: {

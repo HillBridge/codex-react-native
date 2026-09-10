@@ -27,17 +27,29 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
           <Text style={styles.title}>{featured ? '精选商品' : '商品流'}</Text>
           <View style={styles.actions}>
             {featured ? (
-              <Pressable onPress={() => router.push('/products')}>
+              <Pressable
+                accessibilityLabel="查看全部商品"
+                accessibilityRole="button"
+                onPress={() => router.push('/products')}
+                style={({ pressed }) => [pressed && styles.actionPressed]}
+              >
                 <Text style={styles.profile}>全部商品</Text>
               </Pressable>
             ) : null}
-            <Pressable onPress={() => router.push('/profile')}>
+            <Pressable
+              accessibilityLabel="打开账户资料"
+              accessibilityRole="button"
+              onPress={() => router.push('/profile')}
+              style={({ pressed }) => [pressed && styles.actionPressed]}
+            >
               <Text style={styles.profile}>账户</Text>
             </Pressable>
           </View>
         </View>
         {!featured ? (
           <TextInput
+            accessibilityLabel="搜索商品"
+            autoCorrect={false}
             placeholder="搜索商品"
             placeholderTextColor={colors.mutedText}
             style={styles.input}
@@ -47,7 +59,14 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
         ) : null}
         <View style={styles.tabs}>
           {categories.map((item) => (
-            <Pressable key={item} onPress={() => setCategory(item === '全部' ? '' : item)}>
+            <Pressable
+              key={item}
+              accessibilityLabel={`筛选${item}商品`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: category === (item === '全部' ? '' : item) }}
+              onPress={() => setCategory(item === '全部' ? '' : item)}
+              style={({ pressed }) => [pressed && styles.actionPressed]}
+            >
               <Text style={category === (item === '全部' ? '' : item) ? styles.active : styles.tab}>
                 {item}
               </Text>
@@ -60,7 +79,9 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
           items.map((item) => (
             <Pressable
               key={item.id}
-              style={styles.card}
+              accessibilityLabel={`查看${item.name}，价格${item.price}元`}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
               onPress={() => router.push(`/products/${item.slug}`)}
             >
               <Image source={{ uri: item.image }} style={styles.image} />
@@ -81,6 +102,7 @@ const styles = StyleSheet.create({
   content: { gap: spacing.md, paddingBottom: spacing.xl },
   topRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   actions: { flexDirection: 'row', gap: spacing.md },
+  actionPressed: { opacity: 0.68 },
   title: { color: colors.text, fontSize: 30, fontWeight: '800' },
   input: {
     backgroundColor: colors.surface,
@@ -100,6 +122,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     padding: spacing.md,
   },
+  cardPressed: { backgroundColor: colors.background, opacity: 0.86 },
   kicker: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   name: { color: colors.text, fontSize: 18, fontWeight: '800' },
   price: { color: colors.text, fontSize: 17, fontWeight: '800' },
