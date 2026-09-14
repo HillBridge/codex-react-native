@@ -1,8 +1,10 @@
 import { AxiosError } from 'axios';
 
+import { loginOrLocal, refreshOrLocal } from '@/features/auth/api/authFallback';
 import { AUTH_ENDPOINTS } from '@/features/auth/constants/authEndpoints';
 import type { AuthSession, AuthUser } from '@/features/auth/store';
 import { apiClient } from '@/shared/api';
+import { getLocalLoginCredentials, getLocalRefreshCredentials } from './mockAuth';
 
 export type AuthCredentials = { refreshToken: string; session: AuthSession };
 export type LoginPayload = { email: string; password: string };
@@ -25,13 +27,34 @@ function toCredentials(data: MobileAuthData): AuthCredentials {
   };
 }
 
+function shouldUseLocalAuthFallback(error: unknown) {
+  return !(error instanceof AxiosError && error.response);
+}
+
+async function requestLogin(payload: LoginPayload): Promise<AuthCredentials> {
+  const response = await apiClient.post<MobileApiSuccess<MobileAuthData>>(
+    AUTH_ENDPOINTS.login,
+    payload,
+  );
+  return toCredentials(response.data.data);
+}
+
+async function requestSessionRefresh(refreshToken: string): Promise<AuthCredentials> {
+  const response = await apiClient.post<MobileApiSuccess<MobileAuthData>>(
+    AUTH_ENDPOINTS.refreshToken,
+    { refreshToken },
+  );
+  return toCredentials(response.data.data);
+}
+
 export async function login(payload: LoginPayload): Promise<AuthCredentials> {
   try {
-    const response = await apiClient.post<MobileApiSuccess<MobileAuthData>>(
-      AUTH_ENDPOINTS.login,
+    return await loginOrLocal(
+      requestLogin,
+      getLocalLoginCredentials,
       payload,
+      shouldUseLocalAuthFallback,
     );
-    return toCredentials(response.data.data);
   } catch (error) {
     throw new Error(messageFor(error));
   }
@@ -47,11 +70,12 @@ export async function logout() {
 
 export async function refreshSession(refreshToken: string): Promise<AuthCredentials> {
   try {
-    const response = await apiClient.post<MobileApiSuccess<MobileAuthData>>(
-      AUTH_ENDPOINTS.refreshToken,
-      { refreshToken },
+    return await refreshOrLocal(
+      requestSessionRefresh,
+      getLocalRefreshCredentials,
+      refreshToken,
+      shouldUseLocalAuthFallback,
     );
-    return toCredentials(response.data.data);
   } catch (error) {
     throw new Error(messageFor(error));
   }

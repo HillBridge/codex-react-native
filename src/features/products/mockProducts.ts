@@ -1,29 +1,6 @@
-export const demoUser = {
-  email: 'demo@example.com',
-  id: 'user_demo_001',
-  name: 'Nuxt Pilot',
-  password: 'nuxt-demo',
-  points: 12880,
-  preference: '低延迟购物体验',
-  tier: 'Pro',
-};
+import type { ProductDetail, ProductFilter, ProductSummary } from '@/features/products/types';
 
-export function getDemoUserByEmail(email) {
-  return email === demoUser.email ? demoUser : undefined;
-}
-
-export function toUserProfile(user) {
-  return {
-    email: user.email,
-    id: user.id,
-    name: user.name,
-    points: user.points,
-    preference: user.preference,
-    tier: user.tier,
-  };
-}
-
-const catalogProducts = [
+const catalogProducts: ProductDetail[] = [
   {
     id: 'prd_001',
     slug: 'aero-desk-lamp',
@@ -121,7 +98,7 @@ const catalogProducts = [
   },
 ];
 
-export const products = Array.from({ length: 9 }, (_, page) =>
+const mockProducts: ProductDetail[] = Array.from({ length: 9 }, (_, page) =>
   catalogProducts.map((product) => {
     if (page === 0) {
       return product;
@@ -142,8 +119,29 @@ export const products = Array.from({ length: 9 }, (_, page) =>
   }),
 ).flat();
 
-export function toProductSummary(product) {
-  const { description, highlights, stock, ...summary } = product;
+export function getMockProducts(filter: ProductFilter = {}): ProductSummary[] {
+  const q = filter.q?.trim().toLowerCase() || '';
 
-  return summary;
+  return mockProducts
+    .filter((product) => {
+      if (filter.featured === true && !product.featured) return false;
+      if (filter.featured === false && product.featured) return false;
+      if (filter.category && product.category !== filter.category) return false;
+
+      return (
+        !q ||
+        [product.name, product.series, product.category, product.summary]
+          .join(' ')
+          .toLowerCase()
+          .includes(q)
+      );
+    })
+    .map(
+      ({ description: _description, highlights: _highlights, stock: _stock, ...summary }) =>
+        summary,
+    );
+}
+
+export function getMockProduct(slug: string): ProductDetail | undefined {
+  return mockProducts.find((product) => product.slug === slug);
 }

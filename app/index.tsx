@@ -1,9 +1,5 @@
-import { GuestOnlyRoute, LoginScreen } from '@/features/auth';
+import { ProductListScreen } from '@/features/products';
 
 export default function IndexRoute() {
-  return (
-    <GuestOnlyRoute>
-      <LoginScreen />
-    </GuestOnlyRoute>
-  );
+  return <ProductListScreen />;
 }

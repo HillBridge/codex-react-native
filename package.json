@@ -36,11 +36,11 @@
   },
   "scripts": {
     "start": "expo start",
-    "start:sandbox": "node scripts/run-with-env.mjs sandbox expo start",
+    "start:sandbox": "rm -f .env.development.local && node scripts/run-with-env.mjs sandbox expo start --port 8083 --clear --tunnel",
     "android": "expo start --android",
     "android:sandbox": "node scripts/run-with-env.mjs sandbox expo start --android",
     "ios": "expo start --ios",
-    "ios:sandbox": "node scripts/run-with-env.mjs sandbox expo start --ios --port 8082 --clear",
+    "ios:sandbox": "rm .env.development.local && node scripts/run-with-env.mjs sandbox expo start --ios --port 8082 --clear",
     "web": "expo start --web",
     "web:sandbox": "node scripts/run-with-env.mjs sandbox expo start --web",
     "backend": "node backend/server.mjs",

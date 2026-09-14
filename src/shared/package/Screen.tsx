@@ -14,10 +14,16 @@ import { colors, spacing } from '@/shared/constants/theme';
 
 type ScreenProps = PropsWithChildren<{
   centered?: boolean;
+  dismissKeyboardOnPress?: boolean;
   scrollable?: boolean;
 }>;
 
-export function Screen({ centered = false, children, scrollable = false }: ScreenProps) {
+export function Screen({
+  centered = false,
+  children,
+  dismissKeyboardOnPress = true,
+  scrollable = false,
+}: ScreenProps) {
   const content = <View style={[styles.container, centered && styles.centered]}>{children}</View>;
 
   return (
@@ -35,10 +41,12 @@ export function Screen({ centered = false, children, scrollable = false }: Scree
           >
             {content}
           </ScrollView>
-        ) : (
+        ) : dismissKeyboardOnPress ? (
           <Pressable style={styles.dismissArea} onPress={Keyboard.dismiss}>
             {content}
           </Pressable>
+        ) : (
+          content
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>

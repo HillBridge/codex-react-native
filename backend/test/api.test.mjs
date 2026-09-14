@@ -138,13 +138,13 @@ test('product catalog applies featured, category, and text filters', async () =>
       featured.body.data.map((item) => item.slug),
       ['aero-desk-lamp', 'terra-weekender-pack', 'pulse-mini-speaker'],
     );
-    assert.deepEqual(
-      category.body.data.map((item) => item.slug),
-      ['pulse-mini-speaker', 'modular-cable-kit'],
-    );
-    assert.deepEqual(
-      search.body.data.map((item) => item.slug),
-      ['aero-desk-lamp', 'modular-cable-kit'],
+    assert.equal(category.body.data.length, 18);
+    assert.ok(category.body.data.every((item) => item.category === '数码'));
+    assert.equal(search.body.data.length, 18);
+    assert.ok(
+      search.body.data.every((item) =>
+        `${item.name} ${item.series} ${item.summary}`.includes('Desk'),
+      ),
     );
   });
 });

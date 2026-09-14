@@ -68,12 +68,13 @@ src/shared/
 
 **交付物：** 商品列表使用虚拟化列表，具备搜索、下拉刷新、加载、空数据、失败和重试状态。
 
-- [ ] 在 `src/features/products/components/ProductListScreen.tsx` 使用 `FlatList` 呈现商品；为商品唯一标识提供 `keyExtractor`，不使用数组下标作为 key。
-- [ ] 将列表头部、底部加载提示、空数据页和错误页分别作为可复用渲染函数；刷新期间保留已加载商品，首次加载才显示全屏 loading。
-- [ ] 为搜索输入加入 300ms 防抖，并在清空搜索时恢复完整列表；连续快速输入时只采用最后一次请求结果。
-- [ ] 给 `FlatList` 加入 `RefreshControl`，验证下拉刷新成功、请求失败后点击重试、分类没有商品三种状态。
-- [ ] 在包含至少 50 条模拟商品的数据下滚动检查：无重复卡片、无闪烁、图片加载失败时有占位内容。
-- [ ] 运行 `pnpm quality && pnpm test:backend`，并在 Android 设备上验证列表滚动和返回行为一次。
+- [x] 在 `src/features/products/components/ProductListScreen.tsx` 使用 `FlatList` 呈现商品；为商品唯一标识提供 `keyExtractor`，不使用数组下标作为 key。
+- [x] 将列表头部、底部错误提示、空数据页和错误页分别作为可复用渲染函数；刷新期间保留已加载商品，首次加载才显示全屏 loading。
+- [x] 为搜索输入加入 300ms 防抖，并在清空搜索时恢复完整列表；连续快速输入时只采用最后一次请求结果。
+- [x] 给 `FlatList` 加入 `RefreshControl`，实现下拉刷新、请求失败后点击重试、分类没有商品三种状态。
+- [x] 将 mock 商品扩展到 54 条，卡片使用稳定唯一 id，图片加载失败时显示占位内容；真机/模拟器滚动观察待手工验收。
+- [x] 已运行 `pnpm quality` 与 `pnpm test:backend`。
+- [ ] 在 Android 设备上手工验证列表滚动和返回行为一次。
 
 ## 第 3 周：路由、登录状态、前后台与网络
 

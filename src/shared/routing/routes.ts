@@ -1,6 +1,6 @@
 export const APP_ROUTES = {
   home: '/home',
-  login: '/',
+  login: '/login',
   products: '/products',
   profile: '/profile',
 } as const;
