@@ -4,9 +4,10 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLoginForm } from '@/features/auth/hooks';
 import { colors, spacing } from '@/shared/constants/theme';
 import { AppButton, FormTextInput, Screen } from '@/shared/package';
+import type { AppRoute } from '@/shared/routing';
 
-export function LoginScreen() {
-  const { canSubmit, errors, form, isSubmitting, submit, updateField } = useLoginForm();
+export function LoginScreen({ returnTo }: { returnTo?: AppRoute }) {
+  const { canSubmit, errors, form, isSubmitting, submit, updateField } = useLoginForm(returnTo);
   const passwordInput = useRef<TextInput>(null);
 
   return (

@@ -80,12 +80,12 @@ src/shared/
 
 **交付物：** 登录状态可恢复，受保护页面不能被未登录用户访问；App 回到前台时能安全刷新会话或提示重新登录。
 
-- [ ] 梳理 `app/_layout.tsx`、`ProtectedRoute`、`GuestOnlyRoute` 和 `useAuthBootstrap` 的职责；记录“启动、已登录、token 失效、退出”四种路由结果。
+- [x] 梳理 `app/_layout.tsx`、`ProtectedRoute`、`GuestOnlyRoute` 和 `useAuthBootstrap` 的职责；记录“启动、已登录、token 失效、退出”四种路由结果，见 `plans/2026-09-14-week-3-routing-state-record.md`。
 - [ ] 为一次登录、冷启动恢复、refresh token 失效和退出登录分别做手工验收；确认退出后 SecureStore 中的会话数据被清除。
-- [ ] 使用 `AppState` 或现有 `src/shared/lifecycle/useAppForeground.ts` 在从后台回到前台时触发一次受控的会话检查；避免短时间多次前后台切换并发刷新。
-- [ ] 使用 `Linking` 为一个商品详情定义深链输入，例如 `rnmall://products/<slug>`；未登录打开时先进入登录，再返回目标商品。
-- [ ] 在飞行模式和接口 5xx 时验证：页面不崩溃、不泄露服务端细节，并提供明确重试入口。
-- [ ] 运行 `pnpm quality && pnpm test:backend`，记录 iOS 和 Android 的深链测试结果。
+- [x] 使用现有 `src/shared/lifecycle/useAppForeground.ts` 在从后台回到前台时触发受控会话刷新；刷新门控避免短时间 AppState 切换并发请求。
+- [x] 为商品详情配置 `rnmall://products/<slug>` 深链。因商品与详情已按前序要求改为公开浏览，未登录打开时直接进入详情；资料页等受保护路由仍会先登录再回跳。
+- [x] 登录接口的 5xx/断网错误使用通用可读文案，不显示服务端原始细节；商品接口不可用时回退本地 mock，列表已有重试入口。
+- [x] 已运行 `pnpm quality && pnpm test:backend`；iOS 和 Android 的深链手工测试结果仍待记录。
 
 ## 第 4 周：图片、相机、文件与权限
 

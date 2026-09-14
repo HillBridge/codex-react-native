@@ -1,11 +1,9 @@
 import { Redirect, type Href } from 'expo-router';
 
-import type { AppRoute } from '@/shared/routing/routes';
-
 type AppRedirectProps = {
-  to: AppRoute;
+  to: Href;
 };
 
 export function AppRedirect({ to }: AppRedirectProps) {
-  return <Redirect href={to as Href} />;
+  return <Redirect href={to} />;
 }

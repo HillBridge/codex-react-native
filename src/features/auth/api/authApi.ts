@@ -1,6 +1,7 @@
 import { AxiosError } from 'axios';
 
 import { loginOrLocal, refreshOrLocal } from '@/features/auth/api/authFallback';
+import { getAuthRequestMessage } from '@/features/auth/api/authRequestMessage';
 import { AUTH_ENDPOINTS } from '@/features/auth/constants/authEndpoints';
 import type { AuthSession, AuthUser } from '@/features/auth/store';
 import { apiClient } from '@/shared/api';
@@ -14,10 +15,9 @@ type MobileAuthData = { accessToken: string; refreshToken: string; user: AuthUse
 
 function messageFor(error: unknown) {
   if (error instanceof AxiosError) {
-    const data = error.response?.data as { message?: string } | undefined;
-    return data?.message ?? '请求失败，请稍后重试。';
+    return getAuthRequestMessage(error.response?.status);
   }
-  return error instanceof Error ? error.message : '请求失败，请稍后重试。';
+  return getAuthRequestMessage(undefined);
 }
 
 function toCredentials(data: MobileAuthData): AuthCredentials {

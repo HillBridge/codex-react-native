@@ -1,31 +1,37 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { refreshSession } from '@/features/auth/api/authApi';
+import { createSessionRefreshGate } from '@/features/auth/sessionRefreshGate';
 import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
+import { useAppForeground } from '@/shared/lifecycle';
 
 export function useAuthBootstrap() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const setSession = useAuthStore((state) => state.setSession);
   const setStatus = useAuthStore((state) => state.setStatus);
+  const isMountedRef = useRef(true);
+  const refreshGate = useRef(createSessionRefreshGate());
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function restoreSession() {
-      setStatus('restoring');
+  const refreshStoredSession = useCallback(
+    async (isInitialRestore: boolean) => {
+      if (isInitialRestore) {
+        setStatus('restoring');
+      }
 
       try {
         const refreshToken = await authTokenStorage.getRefreshToken();
 
         if (!refreshToken) {
-          clearSession();
+          if (isMountedRef.current) {
+            clearSession();
+          }
           return;
         }
 
         const credentials = await refreshSession(refreshToken);
 
-        if (!isMounted) {
+        if (!isMountedRef.current) {
           return;
         }
 
@@ -34,16 +40,30 @@ export function useAuthBootstrap() {
       } catch {
         await authTokenStorage.removeRefreshToken();
 
-        if (isMounted) {
+        if (isMountedRef.current) {
           clearSession();
         }
       }
-    }
+    },
+    [clearSession, setSession, setStatus],
+  );
 
-    restoreSession();
+  useEffect(() => {
+    isMountedRef.current = true;
+    void refreshGate.current.run(() => refreshStoredSession(true));
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
     };
-  }, [clearSession, setSession, setStatus]);
+  }, [refreshStoredSession]);
+
+  useAppForeground(
+    useCallback(() => {
+      if (!useAuthStore.getState().session) {
+        return;
+      }
+
+      void refreshGate.current.run(() => refreshStoredSession(false));
+    }, [refreshStoredSession]),
+  );
 }

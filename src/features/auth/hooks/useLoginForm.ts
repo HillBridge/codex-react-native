@@ -4,13 +4,14 @@ import { login } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
 import { APP_ROUTES, useAppNavigation } from '@/shared/routing';
+import type { AppRoute } from '@/shared/routing';
 
 import { type LoginForm, type LoginFormErrors, validateLoginForm } from './loginFormValidation';
 
 type Errors = LoginFormErrors & { form?: string };
 const initialForm: LoginForm = { email: 'demo@example.com', password: 'nuxt-demo' };
 
-export function useLoginForm() {
+export function useLoginForm(returnTo: AppRoute = APP_ROUTES.home) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<Errors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,7 +35,7 @@ export function useLoginForm() {
       const credentials = await login({ email: form.email.trim(), password: form.password });
       await authTokenStorage.setRefreshToken(credentials.refreshToken);
       setSession(credentials.session);
-      navigation.replace(APP_ROUTES.home);
+      navigation.replace(returnTo);
     } catch (error) {
       setErrors({ form: error instanceof Error ? error.message : '登录失败，请稍后重试。' });
     } finally {
