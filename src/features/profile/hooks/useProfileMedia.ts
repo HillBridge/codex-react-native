@@ -1,18 +1,10 @@
 import { useCallback, useState } from 'react';
-import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
-import * as Linking from 'expo-linking';
-import * as Sharing from 'expo-sharing';
 
-import {
-  createAvatarTransform,
-  getMediaPermissionMessage,
-  getSharingUnavailableMessage,
-  toAttachmentPreview,
-  type AttachmentPreview,
-} from '@/features/profile/media/profileMediaUtils';
+import { selectOrderAttachment } from '@/shared/device/files/expoAttachmentService';
+import type { AttachmentPreview } from '@/shared/device/files/attachmentService';
+import { selectAvatar } from '@/shared/device/media/expoAvatarService';
+import { openSystemSettings as openNativeSystemSettings } from '@/shared/device/permissions/systemSettings';
+import { shareOrderAttachment } from '@/shared/device/sharing/expoSharingService';
 
 type NoticeTone = 'error' | 'info' | 'success';
 
@@ -28,41 +20,26 @@ export function useProfileMedia() {
   const [needsSettings, setNeedsSettings] = useState(false);
   const [notice, setNotice] = useState<MediaNotice | null>(null);
 
-  const showPermissionNotice = useCallback(
-    (permission: { canAskAgain: boolean; granted: boolean }, source: 'camera' | 'library') => {
-      if (permission.granted) {
-        return false;
-      }
-
-      setNeedsSettings(!permission.canAskAgain);
-      setNotice({
-        message: getMediaPermissionMessage(permission, source),
-        tone: 'error',
-      });
-      return true;
-    },
-    [],
-  );
-
-  const saveAvatar = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
-    const transform = createAvatarTransform(asset);
-
-    if (!transform) {
-      setNotice({ message: '无法读取照片尺寸，请换一张照片重试。', tone: 'error' });
-      return;
-    }
-
+  const selectProfileAvatar = useCallback(async (source: 'camera' | 'library') => {
     setIsProcessingAvatar(true);
     setNeedsSettings(false);
 
     try {
-      const context = ImageManipulator.manipulate(asset.uri);
-      context.crop(transform.crop).resize(transform.resize);
-      const renderedImage = await context.renderAsync();
-      const result = await renderedImage.saveAsync({
-        compress: 0.78,
-        format: SaveFormat.JPEG,
-      });
+      const result = await selectAvatar(source);
+
+      if (result.kind === 'permission-denied') {
+        setNeedsSettings(result.needsSettings);
+        setNotice({ message: result.message, tone: 'error' });
+        return;
+      }
+
+      if (result.kind === 'canceled') {
+        setNotice({
+          message: source === 'camera' ? '已取消拍摄头像。' : '已取消选择头像。',
+          tone: 'info',
+        });
+        return;
+      }
 
       setAvatarUri(result.uri);
       setNotice({ message: '头像已在本地更新，尚未上传到服务器。', tone: 'success' });
@@ -73,70 +50,25 @@ export function useProfileMedia() {
     }
   }, []);
 
-  const pickAvatar = useCallback(async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const pickAvatar = useCallback(() => selectProfileAvatar('library'), [selectProfileAvatar]);
 
-    if (showPermissionNotice(permission, 'library')) {
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: false,
-      mediaTypes: ['images'],
-      quality: 1,
-    });
-
-    if (result.canceled) {
-      setNotice({ message: '已取消选择头像。', tone: 'info' });
-      return;
-    }
-
-    await saveAvatar(result.assets[0]);
-  }, [saveAvatar, showPermissionNotice]);
-
-  const takeAvatarPhoto = useCallback(async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (showPermissionNotice(permission, 'camera')) {
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
-      mediaTypes: ['images'],
-      quality: 1,
-    });
-
-    if (result.canceled) {
-      setNotice({ message: '已取消拍摄头像。', tone: 'info' });
-      return;
-    }
-
-    await saveAvatar(result.assets[0]);
-  }, [saveAvatar, showPermissionNotice]);
+  const takeAvatarPhoto = useCallback(() => selectProfileAvatar('camera'), [selectProfileAvatar]);
 
   const pickOrderAttachment = useCallback(async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        copyToCacheDirectory: true,
-        multiple: false,
-        type: '*/*',
-      });
+      const result = await selectOrderAttachment();
 
-      if (result.canceled) {
+      if (result.kind === 'canceled') {
         setNotice({ message: '已取消选择订单附件。', tone: 'info' });
         return;
       }
 
-      const asset = result.assets[0];
-      const file = new File(asset.uri);
-
-      if (!file.exists) {
+      if (result.kind === 'unreadable') {
         setNotice({ message: '附件暂时无法读取，请重新选择。', tone: 'error' });
         return;
       }
 
-      setAttachment(toAttachmentPreview(asset));
+      setAttachment(result.attachment);
       setNeedsSettings(false);
       setNotice({ message: '附件已选择，仅保留本地元数据。', tone: 'success' });
     } catch {
@@ -150,15 +82,13 @@ export function useProfileMedia() {
     }
 
     try {
-      if (!(await Sharing.isAvailableAsync())) {
-        setNotice({ message: getSharingUnavailableMessage(), tone: 'info' });
+      const result = await shareOrderAttachment(attachment);
+
+      if (result.kind === 'unavailable') {
+        setNotice({ message: result.message, tone: 'info' });
         return;
       }
 
-      await Sharing.shareAsync(attachment.uri, {
-        dialogTitle: '分享订单附件',
-        mimeType: attachment.mimeType === '未知类型' ? undefined : attachment.mimeType,
-      });
       setNotice({ message: '已打开系统分享面板。', tone: 'success' });
     } catch {
       setNotice({ message: '无法分享该附件，请重新选择后再试。', tone: 'error' });
@@ -166,7 +96,7 @@ export function useProfileMedia() {
   }, [attachment]);
 
   const openSystemSettings = useCallback(() => {
-    Linking.openSettings().catch(() => {
+    openNativeSystemSettings().catch(() => {
       setNotice({ message: '无法打开系统设置，请手动前往设置页。', tone: 'error' });
     });
   }, []);

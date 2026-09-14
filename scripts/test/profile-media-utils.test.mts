@@ -1,12 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
-  createAvatarTransform,
-  getMediaPermissionMessage,
-  getSharingUnavailableMessage,
-  toAttachmentPreview,
-} from '../../src/features/profile/media/profileMediaUtils.ts';
+import { createAvatarTransform } from '../../src/shared/device/media/avatarTransform.ts';
+import { toAttachmentPreview } from '../../src/shared/device/files/attachmentService.ts';
+import { getMediaPermissionMessage } from '../../src/shared/device/permissions/mediaPermission.ts';
+import { getSharingUnavailableMessage } from '../../src/shared/device/sharing/sharingService.ts';
 
 test('头像处理会从横图中央裁出正方形并压缩到统一尺寸', () => {
   const transform = createAvatarTransform({ height: 800, width: 1200 });
