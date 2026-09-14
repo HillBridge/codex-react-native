@@ -31,7 +31,16 @@
           "faceIDPermission": "Allow codex-react-native to access your Face ID biometric data."
         }
       ],
-      "expo-status-bar"
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "允许 RN Mall 使用相机拍摄头像。",
+          "microphonePermission": false,
+          "photosPermission": "允许 RN Mall 访问照片以选择头像。"
+        }
+      ],
+      "expo-status-bar",
+      "expo-sharing"
     ]
   }
 }
