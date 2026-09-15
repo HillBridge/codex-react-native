@@ -4,6 +4,9 @@ import { refreshSession } from '@/features/auth/api/authApi';
 import { createSessionRefreshGate } from '@/features/auth/sessionRefreshGate';
 import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
+import { biometricUnlockPreference } from '@/features/auth/utils/biometricUnlockPreference';
+import { resolveSessionUnlock } from '@/shared/device/biometrics/biometricUnlockService';
+import { unlockSavedSession } from '@/shared/device/biometrics/expoBiometricUnlockService';
 import { useAppForeground } from '@/shared/lifecycle';
 
 export function useAuthBootstrap() {
@@ -19,24 +22,39 @@ export function useAuthBootstrap() {
         setStatus('restoring');
       }
 
-      try {
-        const refreshToken = await authTokenStorage.getRefreshToken();
+      const refreshToken = await authTokenStorage.getRefreshToken();
 
-        if (!refreshToken) {
+      if (!refreshToken) {
+        if (isMountedRef.current) {
+          clearSession();
+        }
+        return;
+      }
+
+      if (isInitialRestore) {
+        const unlock = await resolveSessionUnlock({
+          isEnabled: () => biometricUnlockPreference.isEnabled(),
+          unlock: unlockSavedSession,
+        });
+
+        if (
+          unlock.kind !== 'not-required' &&
+          unlock.kind !== 'unlocked' &&
+          unlock.kind !== 'mock-unlocked'
+        ) {
           if (isMountedRef.current) {
             clearSession();
           }
           return;
         }
+      }
 
+      try {
         const credentials = await refreshSession(refreshToken);
-
-        if (!isMountedRef.current) {
-          return;
-        }
-
         await authTokenStorage.setRefreshToken(credentials.refreshToken);
-        setSession(credentials.session);
+        if (isMountedRef.current) {
+          setSession(credentials.session);
+        }
       } catch {
         await authTokenStorage.removeRefreshToken();
 

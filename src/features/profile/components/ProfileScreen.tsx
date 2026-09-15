@@ -1,8 +1,10 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { useAuthStore, useSignOut } from '@/features/auth';
+import { useProfileDeviceCapabilities } from '@/features/profile/hooks/useProfileDeviceCapabilities';
 import { useProfileMedia } from '@/features/profile/hooks/useProfileMedia';
 import { colors, spacing } from '@/shared/constants/theme';
+import { useAndroidBusyBackHandler } from '@/shared/device/platform/useAndroidBusyBackHandler';
 import { AppButton, Screen } from '@/shared/package';
 
 export function ProfileScreen() {
@@ -20,6 +22,19 @@ export function ProfileScreen() {
     shareAttachment,
     takeAvatarPhoto,
   } = useProfileMedia();
+  const {
+    deliveryArea,
+    getDeliveryArea,
+    isBiometricEnabled,
+    isLoadingBiometric,
+    isLoadingLocation,
+    needsLocationSettings,
+    notice: deviceNotice,
+    setBiometricUnlockEnabled,
+  } = useProfileDeviceCapabilities();
+  const isDeviceBusy = isProcessingAvatar || isLoadingBiometric || isLoadingLocation;
+
+  useAndroidBusyBackHandler(isDeviceBusy);
 
   return (
     <Screen scrollable>
@@ -97,17 +112,68 @@ export function ProfileScreen() {
             分享附件
           </AppButton>
         </View>
-        {notice ? (
+        <View style={styles.practiceCard}>
+          <Text style={styles.cardTitle}>配送区域练习</Text>
+          <Text style={styles.description}>仅在点击后请求前台定位权限，不显示精确坐标。</Text>
+          {deliveryArea ? (
+            <View style={styles.attachment}>
+              <Text style={styles.attachmentName}>{deliveryArea}</Text>
+              <Text style={styles.attachmentMeta}>当前配送区域</Text>
+            </View>
+          ) : null}
+          <AppButton
+            accessibilityLabel="获取当前配送区域"
+            disabled={isLoadingLocation}
+            loading={isLoadingLocation}
+            onPress={getDeliveryArea}
+            variant="secondary"
+          >
+            获取当前配送区域
+          </AppButton>
+        </View>
+        <View style={styles.practiceCard}>
+          <Text style={styles.cardTitle}>生物识别解锁练习</Text>
+          <Text style={styles.description}>
+            启用后，重新打开 App 时先使用本机生物识别解锁已保存会话，不替代服务端登录验证。
+          </Text>
+          <View style={styles.switchRow}>
+            <View style={styles.switchText}>
+              <Text style={styles.attachmentName}>重新打开 App 时解锁</Text>
+              <Text style={styles.attachmentMeta}>
+                {isLoadingBiometric
+                  ? '正在验证设备能力…'
+                  : isBiometricEnabled
+                    ? '已启用'
+                    : '未启用'}
+              </Text>
+            </View>
+            <Switch
+              accessibilityLabel="启用生物识别解锁"
+              disabled={isLoadingBiometric}
+              onValueChange={(value) => void setBiometricUnlockEnabled(value)}
+              value={isBiometricEnabled}
+            />
+          </View>
+        </View>
+        {notice || deviceNotice ? (
           <View
             accessibilityLiveRegion="polite"
-            style={[styles.notice, notice.tone === 'error' && styles.noticeError]}
+            style={[
+              styles.notice,
+              (deviceNotice || notice)?.tone === 'error' && styles.noticeError,
+            ]}
           >
-            <Text style={[styles.noticeText, notice.tone === 'error' && styles.noticeErrorText]}>
-              {notice.message}
+            <Text
+              style={[
+                styles.noticeText,
+                (deviceNotice || notice)?.tone === 'error' && styles.noticeErrorText,
+              ]}
+            >
+              {(deviceNotice || notice)?.message}
             </Text>
           </View>
         ) : null}
-        {needsSettings ? (
+        {needsSettings || needsLocationSettings ? (
           <AppButton
             accessibilityLabel="打开系统设置"
             onPress={openSystemSettings}
@@ -182,6 +248,8 @@ const styles = StyleSheet.create({
   },
   attachmentName: { color: colors.text, fontWeight: '700' },
   attachmentMeta: { color: colors.mutedText, fontSize: 13 },
+  switchRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  switchText: { flex: 1, gap: spacing.xs },
   notice: {
     backgroundColor: '#ECFDF3',
     borderColor: '#A7F3D0',

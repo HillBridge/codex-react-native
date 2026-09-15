@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { login } from '@/features/auth/api/authApi';
 import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
+import { triggerHapticFeedback } from '@/shared/device/feedback/expoHapticFeedback';
 import { APP_ROUTES, useAppNavigation } from '@/shared/routing';
 import type { AppRoute } from '@/shared/routing';
 
@@ -29,14 +30,19 @@ export function useLoginForm(returnTo: AppRoute = APP_ROUTES.home) {
 
   async function submit() {
     const nextErrors = validateLoginForm(form);
-    if (Object.keys(nextErrors).length) return setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      void triggerHapticFeedback('error');
+      return setErrors(nextErrors);
+    }
     setIsSubmitting(true);
     try {
       const credentials = await login({ email: form.email.trim(), password: form.password });
       await authTokenStorage.setRefreshToken(credentials.refreshToken);
       setSession(credentials.session);
+      void triggerHapticFeedback('success');
       navigation.replace(returnTo);
     } catch (error) {
+      void triggerHapticFeedback('error');
       setErrors({ form: error instanceof Error ? error.message : '登录失败，请稍后重试。' });
     } finally {
       setIsSubmitting(false);

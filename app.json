@@ -8,6 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.hillbridge.rnmall.dev",
       "supportsTablet": true
     },
     "android": {
@@ -27,8 +28,19 @@
       [
         "expo-secure-store",
         {
-          "configureAndroidBackup": true,
-          "faceIDPermission": "Allow codex-react-native to access your Face ID biometric data."
+          "configureAndroidBackup": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "允许 RN Mall 使用当前位置估算配送区域。"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "允许 RN Mall 使用 Face ID 解锁已保存会话。"
         }
       ],
       [

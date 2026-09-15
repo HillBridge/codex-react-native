@@ -102,12 +102,12 @@ src/shared/
 
 **交付物：** 用户能授权定位、启用生物识别解锁；失败或设备不支持时有明确降级路径。
 
-- [ ] 安装 `expo-location`，实现“获取当前配送区域”的练习入口；仅在用户点击后请求定位，不在 App 启动时静默索取权限。
-- [ ] 对定位关闭、权限拒绝、模拟器无位置、获取成功分别显示不同状态；不要在界面显示精确经纬度以外的无关调试信息。
-- [ ] 安装 `expo-local-authentication`，将生物识别作为“重新打开 App 时解锁已保存会话”的可选设置，而不是取代服务端身份验证。
-- [ ] 使用 `expo-haptics` 为登录成功、收藏成功、错误提示提供三种有区分的轻量触感反馈。
-- [ ] 使用 `Platform`、`BackHandler`、`PermissionsAndroid` 处理 Android 返回和权限差异；iOS 分支不得包含 Android 专属调用。
-- [ ] 在一台 iOS 真机和一台 Android 真机验证权限与生物识别；运行 `pnpm quality && pnpm test:backend`。
+- [x] 安装 `expo-location`，实现“获取当前配送区域”的练习入口；仅在用户点击后请求定位，不在 App 启动时静默索取权限。
+- [x] 对定位关闭、权限拒绝、模拟器无位置、获取成功分别显示不同状态；界面只展示配送区域，不展示精确经纬度或调试信息。
+- [x] 安装 `expo-local-authentication`，将生物识别作为“重新打开 App 时解锁已保存会话”的可选设置，而不是取代服务端身份验证。
+- [x] 使用 `expo-haptics` 为登录成功、收藏成功、错误提示提供三种有区分的轻量触感反馈。
+- [x] 使用 `Platform`、`BackHandler`、`PermissionsAndroid` 处理 Android 返回和权限差异；iOS 分支不执行 Android 专属调用。
+- [ ] 在一台 iOS 真机和一台 Android 真机验证权限与生物识别；已通过 `pnpm quality`、前端 33 项测试、后端 9 项测试以及 iOS/Android 打包，仍需真实设备手工验收。
 
 ## 第 6 周：离线数据、通知、开发构建与原生扩展
 
