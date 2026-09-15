@@ -1,11 +1,13 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
-import { createAvatarService } from '@/shared/device/media/avatarService';
+import { createAvatarService, type AvatarTiming } from '@/shared/device/media/avatarService';
 import { createAvatarTransform } from '@/shared/device/media/avatarTransform';
 import { getMediaPermissionMessage } from '@/shared/device/permissions/mediaPermission';
+import { beginNativeSystemUiActivity } from '@/shared/lifecycle';
 
 const avatarService = createAvatarService({
+  beginNativeSystemUiActivity,
   getPermissionMessage: getMediaPermissionMessage,
   async launch(source) {
     const result =
@@ -29,12 +31,21 @@ const avatarService = createAvatarService({
 
     return result.uri;
   },
+  reportTiming: logAvatarTiming,
   requestPermission(source) {
     return source === 'camera'
       ? ImagePicker.requestCameraPermissionsAsync()
       : ImagePicker.requestMediaLibraryPermissionsAsync();
   },
 });
+
+function logAvatarTiming({ durationMs, source, step }: AvatarTiming) {
+  if (!__DEV__) {
+    return;
+  }
+
+  console.info(`[头像耗时] ${source} · ${step}: ${durationMs}ms`);
+}
 
 const IMAGE_OPTIONS: ImagePicker.ImagePickerOptions = {
   allowsEditing: false,

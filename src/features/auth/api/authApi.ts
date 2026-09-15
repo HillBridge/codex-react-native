@@ -5,6 +5,7 @@ import { getAuthRequestMessage } from '@/features/auth/api/authRequestMessage';
 import { AUTH_ENDPOINTS } from '@/features/auth/constants/authEndpoints';
 import type { AuthSession, AuthUser } from '@/features/auth/store';
 import { apiClient } from '@/shared/api';
+import { USE_MOCK_DATA } from '@/shared/constants/env';
 import { getLocalLoginCredentials, getLocalRefreshCredentials } from './mockAuth';
 
 export type AuthCredentials = { refreshToken: string; session: AuthSession };
@@ -54,6 +55,7 @@ export async function login(payload: LoginPayload): Promise<AuthCredentials> {
       getLocalLoginCredentials,
       payload,
       shouldUseLocalAuthFallback,
+      USE_MOCK_DATA,
     );
   } catch (error) {
     throw new Error(messageFor(error));
@@ -61,6 +63,10 @@ export async function login(payload: LoginPayload): Promise<AuthCredentials> {
 }
 
 export async function logout() {
+  if (USE_MOCK_DATA) {
+    return;
+  }
+
   try {
     await apiClient.post(AUTH_ENDPOINTS.logout);
   } catch (error) {
@@ -75,6 +81,7 @@ export async function refreshSession(refreshToken: string): Promise<AuthCredenti
       getLocalRefreshCredentials,
       refreshToken,
       shouldUseLocalAuthFallback,
+      USE_MOCK_DATA,
     );
   } catch (error) {
     throw new Error(messageFor(error));

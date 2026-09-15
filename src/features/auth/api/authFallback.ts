@@ -13,7 +13,18 @@ export async function loginOrLocal(
   loadLocal: LoginFallback,
   payload: LoginPayload,
   shouldFallback: ShouldFallback = shouldAlwaysFallback,
+  preferLocal = false,
 ): Promise<AuthCredentials> {
+  if (preferLocal) {
+    const localCredentials = loadLocal(payload);
+
+    if (localCredentials) {
+      return localCredentials;
+    }
+
+    throw new Error('local login credentials unavailable');
+  }
+
   try {
     return await loadRemote(payload);
   } catch (error) {
@@ -36,7 +47,18 @@ export async function refreshOrLocal(
   loadLocal: RefreshFallback,
   refreshToken: string,
   shouldFallback: ShouldFallback = shouldAlwaysFallback,
+  preferLocal = false,
 ): Promise<AuthCredentials> {
+  if (preferLocal) {
+    const localCredentials = loadLocal(refreshToken);
+
+    if (localCredentials) {
+      return localCredentials;
+    }
+
+    throw new Error('local refresh credentials unavailable');
+  }
+
   try {
     return await loadRemote(refreshToken);
   } catch (error) {

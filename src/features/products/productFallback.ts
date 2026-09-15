@@ -9,7 +9,12 @@ export async function loadProductsOrMock(
   loadRemote: ProductLoader,
   loadMock: ProductFallback,
   filter: ProductFilter,
+  preferMock = false,
 ): Promise<ProductSummary[]> {
+  if (preferMock) {
+    return loadMock(filter);
+  }
+
   try {
     return await loadRemote(filter);
   } catch {
@@ -21,7 +26,18 @@ export async function loadProductOrMock(
   loadRemote: ProductDetailLoader,
   loadMock: ProductDetailFallback,
   slug: string,
+  preferMock = false,
 ): Promise<ProductDetail> {
+  if (preferMock) {
+    const mockProduct = loadMock(slug);
+
+    if (mockProduct) {
+      return mockProduct;
+    }
+
+    throw new Error('mock product not found');
+  }
+
   try {
     return await loadRemote(slug);
   } catch (error) {

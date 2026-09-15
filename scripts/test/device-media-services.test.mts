@@ -53,6 +53,76 @@ test('头像服务会把选中的照片交给统一处理器并返回处理后�
   assert.deepEqual(result, { kind: 'selected', uri: 'file:///cache/avatar-512.jpg' });
 });
 
+test('头像服务会分别记录权限、系统界面、选图返回和图片处理的耗时', async () => {
+  let clock = 0;
+  const timings: unknown[] = [];
+  const service = createAvatarService({
+    getPermissionMessage: getMediaPermissionMessage,
+    launch: () => {
+      clock += 1;
+      return Promise.resolve().then(() => {
+        clock += 20;
+        return {
+          asset: { height: 800, uri: 'file:///library/original.jpg', width: 1200 },
+          canceled: false,
+        };
+      });
+    },
+    now: () => clock,
+    process: async () => {
+      clock += 30;
+      return 'file:///cache/avatar-512.jpg';
+    },
+    reportTiming: (timing) => {
+      timings.push(timing);
+    },
+    requestPermission: async () => {
+      clock += 10;
+      return { canAskAgain: true, granted: true };
+    },
+  });
+
+  await service.select('library');
+
+  assert.deepEqual(timings, [
+    { durationMs: 10, source: 'library', step: 'permission' },
+    { durationMs: 1, source: 'library', step: 'open-system-ui' },
+    { durationMs: 20, source: 'library', step: 'selection-returned' },
+    { durationMs: 30, source: 'library', step: 'image-processing' },
+  ]);
+});
+
+test('系统相册或相机打开期间会持有原生界面活动标记，选图返回后再释放', async () => {
+  let isNativeUiActive = false;
+  let releaseCount = 0;
+  const service = createAvatarService({
+    beginNativeSystemUiActivity: () => {
+      isNativeUiActive = true;
+      return () => {
+        isNativeUiActive = false;
+        releaseCount += 1;
+      };
+    },
+    getPermissionMessage: getMediaPermissionMessage,
+    launch: async () => {
+      assert.equal(isNativeUiActive, true);
+      return {
+        asset: { height: 800, uri: 'file:///library/original.jpg', width: 1200 },
+        canceled: false,
+      };
+    },
+    process: async () => {
+      assert.equal(isNativeUiActive, false);
+      return 'file:///cache/avatar-512.jpg';
+    },
+    requestPermission: async () => ({ canAskAgain: true, granted: true }),
+  });
+
+  await service.select('library');
+
+  assert.equal(releaseCount, 1);
+});
+
 test('不可读取的附件不会作为可分享附件返回', async () => {
   const service = createAttachmentService({
     exists: () => false,

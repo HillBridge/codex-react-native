@@ -20,6 +20,24 @@ test('登录接口无法连接时，演示账号获得本地会话', async () =>
   assert.equal(credentials.session.user.name, 'Nuxt Pilot');
 });
 
+test('显式 mock 模式登录不发起远程请求', async () => {
+  let remoteCalls = 0;
+
+  const credentials = await loginOrLocal(
+    async () => {
+      remoteCalls += 1;
+      throw new Error('remote request should not run');
+    },
+    getLocalLoginCredentials,
+    { email: 'demo@example.com', password: 'nuxt-demo' },
+    undefined,
+    true,
+  );
+
+  assert.equal(remoteCalls, 0);
+  assert.equal(credentials.session.user.id, 'user_demo_001');
+});
+
 test('登录接口无法连接时，错误密码不会获得本地会话', async () => {
   await assert.rejects(
     () =>

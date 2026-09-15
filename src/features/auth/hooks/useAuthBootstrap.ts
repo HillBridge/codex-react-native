@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { refreshSession } from '@/features/auth/api/authApi';
+import { createForegroundSessionRefreshScheduler } from '@/features/auth/foregroundSessionRefresh';
 import { createSessionRefreshGate } from '@/features/auth/sessionRefreshGate';
 import { useAuthStore } from '@/features/auth/store';
 import { authTokenStorage } from '@/features/auth/utils/authTokenStorage';
 import { biometricUnlockPreference } from '@/features/auth/utils/biometricUnlockPreference';
 import { resolveSessionUnlock } from '@/shared/device/biometrics/biometricUnlockService';
 import { unlockSavedSession } from '@/shared/device/biometrics/expoBiometricUnlockService';
-import { useAppForeground } from '@/shared/lifecycle';
+import { isNativeSystemUiActive, useAppForeground } from '@/shared/lifecycle';
 
 export function useAuthBootstrap() {
   const clearSession = useAuthStore((state) => state.clearSession);
@@ -15,6 +16,9 @@ export function useAuthBootstrap() {
   const setStatus = useAuthStore((state) => state.setStatus);
   const isMountedRef = useRef(true);
   const refreshGate = useRef(createSessionRefreshGate());
+  const foregroundRefresh = useRef(
+    createForegroundSessionRefreshScheduler({ clearTimeout, setTimeout }),
+  );
 
   const refreshStoredSession = useCallback(
     async (isInitialRestore: boolean) => {
@@ -67,21 +71,33 @@ export function useAuthBootstrap() {
   );
 
   useEffect(() => {
+    const scheduler = foregroundRefresh.current;
+
     isMountedRef.current = true;
     void refreshGate.current.run(() => refreshStoredSession(true));
 
     return () => {
       isMountedRef.current = false;
+      scheduler.cancel();
     };
   }, [refreshStoredSession]);
 
   useAppForeground(
     useCallback(() => {
-      if (!useAuthStore.getState().session) {
+      if (!useAuthStore.getState().session || isNativeSystemUiActive()) {
         return;
       }
 
-      void refreshGate.current.run(() => refreshStoredSession(false));
+      foregroundRefresh.current.schedule(() => {
+        if (!useAuthStore.getState().session) {
+          return;
+        }
+
+        void refreshGate.current.run(() => refreshStoredSession(false));
+      });
     }, [refreshStoredSession]),
+    useCallback(() => {
+      foregroundRefresh.current.cancel();
+    }, []),
   );
 }

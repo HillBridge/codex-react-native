@@ -14,11 +14,14 @@ import { useRouter } from 'expo-router';
 
 import { useAuthStore } from '@/features/auth';
 import { getProducts } from '@/features/products/api/productsApi';
+import { canLoadProductImage } from '@/features/products/productImage';
+import { createProductRequestAbortController } from '@/features/products/productRequestAbortController';
 import { createProductRequestGate } from '@/features/products/productRequestGate';
 import type { ProductSummary } from '@/features/products/types';
 import { colors, spacing } from '@/shared/constants/theme';
 import { Screen } from '@/shared/package';
 import { APP_ROUTES } from '@/shared/routing/routes';
+import { markNavigationDispatched, startNavigationTiming } from '@/shared/routing/navigationTiming';
 
 const categories = ['全部', '家居', '户外', '数码', '穿搭'];
 const SEARCH_DEBOUNCE_MS = 300;
@@ -145,7 +148,7 @@ function ProductCard({ item, onPress }: { item: ProductSummary; onPress: () => v
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
     >
-      {imageUnavailable ? (
+      {!canLoadProductImage(item.image) || imageUnavailable ? (
         <View style={styles.imagePlaceholder}>
           <Text style={styles.imagePlaceholderText}>图片暂时无法加载</Text>
         </View>
@@ -174,9 +177,18 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const requestGate = useRef(createProductRequestGate());
+  const requestAbortController = useRef(createProductRequestAbortController());
   const hasLoadedOnce = useRef(false);
   const router = useRouter();
   const session = useAuthStore((state) => state.session);
+
+  const openAccount = useCallback(() => {
+    const target = session ? APP_ROUTES.profile : APP_ROUTES.login;
+
+    startNavigationTiming(target);
+    router.push(target);
+    markNavigationDispatched(target);
+  }, [router, session]);
 
   const loadProducts = useCallback(
     async (requestId: number, { refreshing = false, showFullScreen = false }: LoadOptions = {}) => {
@@ -189,7 +201,10 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
       setError('');
 
       try {
-        const nextItems = await getProducts({ category, featured, q: q.trim() });
+        const nextItems = await getProducts(
+          { category, featured, q: q.trim() },
+          { signal: requestAbortController.current.begin() },
+        );
         if (!requestGate.current.isCurrent(requestId)) {
           return;
         }
@@ -221,8 +236,12 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
 
   useEffect(() => {
     const gate = requestGate.current;
+    const abortController = requestAbortController.current;
 
-    return () => gate.invalidate();
+    return () => {
+      gate.invalidate();
+      abortController.cancel();
+    };
   }, []);
 
   const reloadNow = useCallback(
@@ -261,7 +280,7 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
             category={category}
             featured={featured}
             isSignedIn={Boolean(session)}
-            onAccountPress={() => router.push(session ? APP_ROUTES.profile : APP_ROUTES.login)}
+            onAccountPress={openAccount}
             onCategoryChange={setCategory}
             onProductsPress={() => router.push(APP_ROUTES.products)}
             onQueryChange={setQ}

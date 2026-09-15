@@ -98,26 +98,7 @@ const catalogProducts: ProductDetail[] = [
   },
 ];
 
-const mockProducts: ProductDetail[] = Array.from({ length: 9 }, (_, page) =>
-  catalogProducts.map((product) => {
-    if (page === 0) {
-      return product;
-    }
-
-    const edition = page + 1;
-
-    return {
-      ...product,
-      featured: false,
-      id: `${product.id}_practice_${edition}`,
-      name: `${product.name} ${edition}`,
-      price: product.price + page * 25,
-      series: `${product.series} ${edition}`,
-      slug: `${product.slug}-practice-${edition}`,
-      stock: Math.max(1, product.stock - page * 2),
-    };
-  }),
-).flat();
+const mockProducts: ProductDetail[] = catalogProducts.map((product) => ({ ...product, image: '' }));
 
 export function getMockProducts(filter: ProductFilter = {}): ProductSummary[] {
   const q = filter.q?.trim().toLowerCase() || '';

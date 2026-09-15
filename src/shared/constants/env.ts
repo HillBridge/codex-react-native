@@ -35,3 +35,5 @@ export const API_TIMEOUT_MS = getPublicNumberEnv(
   process.env.EXPO_PUBLIC_API_TIMEOUT_MS,
   60000,
 );
+
+export const USE_MOCK_DATA = process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true';

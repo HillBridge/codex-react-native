@@ -9,9 +9,17 @@ export function ProductDetailScreen({ slug }: { slug: string }) {
   const [error, setError] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   useEffect(() => {
-    getProduct(slug)
+    const requestController = new AbortController();
+
+    getProduct(slug, { signal: requestController.signal })
       .then(setItem)
-      .catch(() => setError('商品不存在或加载失败。'));
+      .catch(() => {
+        if (!requestController.signal.aborted) {
+          setError('商品不存在或加载失败。');
+        }
+      });
+
+    return () => requestController.abort();
   }, [slug]);
   return (
     <Screen>

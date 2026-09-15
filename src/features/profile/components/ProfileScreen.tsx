@@ -1,3 +1,4 @@
+import { useEffect, useLayoutEffect } from 'react';
 import { Image, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { useAuthStore, useSignOut } from '@/features/auth';
@@ -6,8 +7,17 @@ import { useProfileMedia } from '@/features/profile/hooks/useProfileMedia';
 import { colors, spacing } from '@/shared/constants/theme';
 import { useAndroidBusyBackHandler } from '@/shared/device/platform/useAndroidBusyBackHandler';
 import { AppButton, Screen } from '@/shared/package';
+import { APP_ROUTES } from '@/shared/routing/routes';
+import {
+  markNavigationNativeLayout,
+  markNavigationReactCommitted,
+  markNavigationScreenMounted,
+  markNavigationScreenRenderStarted,
+} from '@/shared/routing/navigationTiming';
 
 export function ProfileScreen() {
+  markNavigationScreenRenderStarted(APP_ROUTES.profile);
+
   const user = useAuthStore((state) => state.session?.user);
   const signOut = useSignOut();
   const {
@@ -34,11 +44,19 @@ export function ProfileScreen() {
   } = useProfileDeviceCapabilities();
   const isDeviceBusy = isProcessingAvatar || isLoadingBiometric || isLoadingLocation;
 
+  useLayoutEffect(() => {
+    markNavigationReactCommitted(APP_ROUTES.profile);
+  }, []);
+
+  useEffect(() => {
+    markNavigationScreenMounted(APP_ROUTES.profile);
+  }, []);
+
   useAndroidBusyBackHandler(isDeviceBusy);
 
   return (
     <Screen scrollable>
-      <View style={styles.content}>
+      <View style={styles.content} onLayout={() => markNavigationNativeLayout(APP_ROUTES.profile)}>
         <View style={styles.header}>
           <View style={styles.avatarRow}>
             {avatarUri ? (
