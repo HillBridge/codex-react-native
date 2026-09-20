@@ -5,9 +5,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthBootstrapper, useConfigureAuthApiClient } from '@/features/auth';
 import { colors } from '@/shared/constants/theme';
+import { useNotificationObserver } from '@/shared/notifications';
 
 export default function RootLayout() {
   useConfigureAuthApiClient();
+  useNotificationObserver();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

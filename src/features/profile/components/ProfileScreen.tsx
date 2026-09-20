@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { Image, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { useAuthStore, useSignOut } from '@/features/auth';
@@ -7,6 +7,7 @@ import { useProfileMedia } from '@/features/profile/hooks/useProfileMedia';
 import { colors, spacing } from '@/shared/constants/theme';
 import { useAndroidBusyBackHandler } from '@/shared/device/platform/useAndroidBusyBackHandler';
 import { AppButton, Screen } from '@/shared/package';
+import { scheduleProductReminder } from '@/shared/notifications';
 import { APP_ROUTES } from '@/shared/routing/routes';
 import {
   markNavigationNativeLayout,
@@ -20,6 +21,11 @@ export function ProfileScreen() {
 
   const user = useAuthStore((state) => state.session?.user);
   const signOut = useSignOut();
+  const [isSchedulingReminder, setIsSchedulingReminder] = useState(false);
+  const [notificationNotice, setNotificationNotice] = useState<{
+    message: string;
+    tone: 'error' | 'success';
+  } | null>(null);
   const {
     attachment,
     avatarUri,
@@ -42,7 +48,25 @@ export function ProfileScreen() {
     notice: deviceNotice,
     setBiometricUnlockEnabled,
   } = useProfileDeviceCapabilities();
-  const isDeviceBusy = isProcessingAvatar || isLoadingBiometric || isLoadingLocation;
+  const isDeviceBusy =
+    isProcessingAvatar || isLoadingBiometric || isLoadingLocation || isSchedulingReminder;
+  const combinedNotice = notificationNotice ?? deviceNotice ?? notice;
+
+  const sendProductReminder = async () => {
+    setIsSchedulingReminder(true);
+    const result = await scheduleProductReminder('aero-desk-lamp');
+    setIsSchedulingReminder(false);
+    setNotificationNotice(
+      result === 'scheduled'
+        ? { message: '已发送本地商品提醒；点按通知可打开商品详情。', tone: 'success' }
+        : result === 'denied'
+          ? { message: '通知权限未授予，可在系统设置中允许后再试。', tone: 'error' }
+          : {
+              message: '当前环境无法发送本地通知，请使用 development build 真机测试。',
+              tone: 'error',
+            },
+    );
+  };
 
   useLayoutEffect(() => {
     markNavigationReactCommitted(APP_ROUTES.profile);
@@ -173,21 +197,30 @@ export function ProfileScreen() {
             />
           </View>
         </View>
-        {notice || deviceNotice ? (
+        <View style={styles.practiceCard}>
+          <Text style={styles.cardTitle}>本地通知练习</Text>
+          <Text style={styles.description}>
+            手动请求通知权限并发送一条本地商品提醒；点按通知会安全跳转到指定商品。
+          </Text>
+          <AppButton
+            accessibilityLabel="发送商品提醒"
+            disabled={isSchedulingReminder}
+            loading={isSchedulingReminder}
+            onPress={() => void sendProductReminder()}
+            variant="secondary"
+          >
+            发送商品提醒
+          </AppButton>
+        </View>
+        {combinedNotice ? (
           <View
             accessibilityLiveRegion="polite"
-            style={[
-              styles.notice,
-              (deviceNotice || notice)?.tone === 'error' && styles.noticeError,
-            ]}
+            style={[styles.notice, combinedNotice.tone === 'error' && styles.noticeError]}
           >
             <Text
-              style={[
-                styles.noticeText,
-                (deviceNotice || notice)?.tone === 'error' && styles.noticeErrorText,
-              ]}
+              style={[styles.noticeText, combinedNotice.tone === 'error' && styles.noticeErrorText]}
             >
-              {(deviceNotice || notice)?.message}
+              {combinedNotice.message}
             </Text>
           </View>
         ) : null}

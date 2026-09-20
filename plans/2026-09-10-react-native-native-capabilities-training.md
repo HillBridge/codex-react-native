@@ -113,12 +113,12 @@ src/shared/
 
 **交付物：** App 可缓存最近商品，通知可跳转到目标页面，并明确知道何时必须从 Expo Go 切换到 development build。
 
-- [ ] 安装 `expo-sqlite`，缓存最近成功加载的商品列表；离线时展示缓存来源和最后更新时间，联网后再刷新。
-- [ ] 缓存读写失败时回退到内存数据并展示可理解提示；退出登录时删除仅属于该用户的缓存。
-- [ ] 安装 `expo-notifications`，实现本地测试通知；点击通知后经 `expo-linking` 打开指定商品或订单页面。
-- [ ] 为应用启动、前台收到通知、后台点击通知、通知无效路由四个流程写出手工验证清单。
-- [ ] 列出本项目当前 Expo Go 可直接验证的模块与需要 development build 的模块；每新增原生依赖后使用 development build 完成一次启动验证。
-- [ ] 完成一次发布前检查：`pnpm quality && pnpm test:backend`、iOS 真机、Android 真机、无网络、权限拒绝、冷启动与后台恢复。
+- [x] 安装 `expo-sqlite`，缓存最近成功加载的商品列表；离线时展示缓存来源和最后更新时间，联网后再刷新。
+- [x] 缓存读写失败时回退到内存数据并展示可理解提示；退出登录时删除仅属于该用户的缓存。
+- [x] 安装 `expo-notifications`，实现本地测试通知；点击通知后经 `expo-linking` 打开指定商品或订单页面。
+- [x] 为应用启动、前台收到通知、后台点击通知、通知无效路由四个流程写出手工验证清单，见 `plans/2026-09-17-week-6-offline-notifications-record.md`。
+- [x] 列出本项目当前 Expo Go 可直接验证的模块与需要 development build 的模块；每新增原生依赖后使用 development build 完成一次启动验证，见 `plans/2026-09-17-week-6-offline-notifications-record.md`。
+- [ ] 完成一次发布前检查：`pnpm quality && pnpm test:backend`、iOS 真机、Android 真机、无网络、权限拒绝、冷启动与后台恢复；自动化校验已通过，真机检查待执行。
 
 ## 完成标准
 

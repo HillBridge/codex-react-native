@@ -71,7 +71,8 @@
         }
       ],
       "expo-status-bar",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-sqlite"
     ]
   }
 }

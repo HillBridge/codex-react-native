@@ -33,6 +33,7 @@ type LoadOptions = {
 
 type ProductListHeaderProps = {
   category: string;
+  dataStatus: string | null;
   featured: boolean;
   isSignedIn: boolean;
   onAccountPress: () => void;
@@ -44,6 +45,7 @@ type ProductListHeaderProps = {
 
 function ProductListHeader({
   category,
+  dataStatus,
   featured,
   isSignedIn,
   onAccountPress,
@@ -105,6 +107,7 @@ function ProductListHeader({
           );
         })}
       </View>
+      {dataStatus ? <Text style={styles.dataStatus}>{dataStatus}</Text> : null}
     </View>
   );
 }
@@ -169,10 +172,24 @@ function ProductCard({ item, onPress }: { item: ProductSummary; onPress: () => v
   );
 }
 
+function formatCacheTime(updatedAt?: number) {
+  if (!updatedAt) {
+    return '未知时间';
+  }
+
+  return new Date(updatedAt).toLocaleString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    month: '2-digit',
+    day: '2-digit',
+  });
+}
+
 export function ProductListScreen({ featured = false }: { featured?: boolean }) {
   const [items, setItems] = useState<ProductSummary[]>([]);
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('');
+  const [dataStatus, setDataStatus] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -201,14 +218,21 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
       setError('');
 
       try {
-        const nextItems = await getProducts(
+        const nextCatalog = await getProducts(
           { category, featured, q: q.trim() },
           { signal: requestAbortController.current.begin() },
         );
         if (!requestGate.current.isCurrent(requestId)) {
           return;
         }
-        setItems(nextItems);
+        setItems(nextCatalog.items);
+        setDataStatus(
+          nextCatalog.source === 'cache'
+            ? `离线缓存 · 更新于 ${formatCacheTime(nextCatalog.updatedAt)}`
+            : nextCatalog.source === 'mock'
+              ? '正在使用本地练习数据'
+              : null,
+        );
         hasLoadedOnce.current = true;
       } catch {
         if (!requestGate.current.isCurrent(requestId)) {
@@ -278,6 +302,7 @@ export function ProductListScreen({ featured = false }: { featured?: boolean }) 
         ListHeaderComponent={
           <ProductListHeader
             category={category}
+            dataStatus={dataStatus}
             featured={featured}
             isSignedIn={Boolean(session)}
             onAccountPress={openAccount}
@@ -321,6 +346,7 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tab: { color: colors.mutedText, padding: spacing.sm },
   active: { color: colors.primary, fontWeight: '800', padding: spacing.sm },
+  dataStatus: { color: colors.mutedText, fontSize: 13 },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

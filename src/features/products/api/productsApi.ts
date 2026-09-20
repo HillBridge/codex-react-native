@@ -1,6 +1,9 @@
 import { apiClient } from '@/shared/api';
+import { useAuthStore } from '@/features/auth/store';
+import { productCatalogCache } from '@/features/products/expoProductCatalogCache';
 import { getMockProduct, getMockProducts } from '@/features/products/mockProducts';
-import { loadProductOrMock, loadProductsOrMock } from '@/features/products/productFallback';
+import { loadProductCatalog } from '@/features/products/productCatalogLoader';
+import { loadProductOrMock } from '@/features/products/productFallback';
 import type { ProductDetail, ProductFilter, ProductSummary } from '@/features/products/types';
 import { USE_MOCK_DATA } from '@/shared/constants/env';
 type Envelope<T> = { data: T; traceId: string };
@@ -21,13 +24,26 @@ async function requestProduct(slug: string, { signal }: ProductRequestOptions = 
   return response.data.data;
 }
 
+function getCatalogOwnerKey() {
+  return useAuthStore.getState().session?.user.id ?? 'guest';
+}
+
+export function clearCachedProductsForUser(userId: string) {
+  return productCatalogCache.clear(userId);
+}
+
 export function getProducts(filter: ProductFilter = {}, options: ProductRequestOptions = {}) {
-  return loadProductsOrMock(
-    () => requestProducts(filter, options),
-    getMockProducts,
+  const shouldCacheCatalog = !filter.category && !filter.featured && !filter.q?.trim();
+
+  return loadProductCatalog({
     filter,
-    USE_MOCK_DATA,
-  );
+    loadCache: productCatalogCache.read,
+    loadMock: getMockProducts,
+    loadRemote: () => requestProducts(filter, options),
+    ownerKey: getCatalogOwnerKey(),
+    preferMock: USE_MOCK_DATA,
+    saveCache: shouldCacheCatalog ? productCatalogCache.save : async () => undefined,
+  });
 }
 
 export function getProduct(slug: string, options: ProductRequestOptions = {}) {
